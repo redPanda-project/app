@@ -1,6 +1,4 @@
-# redpanda
-
-[![Build Status](https://travis-ci.org/redPanda-project/app.svg?branch=master)](https://travis-ci.org/redPanda-project/app)
+# redpanda [![Build Status](https://travis-ci.org/redPanda-project/app.svg?branch=master)](https://travis-ci.org/redPanda-project/app)
 
 redPanda p2p chat app.
 
