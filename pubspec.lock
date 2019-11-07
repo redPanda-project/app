@@ -29,6 +29,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.6"
+  byte_array:
+    dependency: "direct main"
+    description:
+      name: byte_array
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.6"
   charcode:
     dependency: transitive
     description:

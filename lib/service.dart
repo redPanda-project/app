@@ -1,13 +1,16 @@
 import 'dart:io';
+import 'dart:typed_data' hide ByteBuffer;
 import 'dart:typed_data';
+import 'dart:typed_data' as prefix0;
 
 import 'package:base58check/base58.dart';
 import 'package:base58check/base58check.dart';
 import 'package:buffer/buffer.dart';
+import 'package:byte_array/byte_array.dart';
 import 'dart:convert';
 
 import 'package:hex/hex.dart';
-
+import 'package:redpanda/redPanda/ByteBuffer.dart';
 
 const String _bitcoinAlphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -44,7 +47,7 @@ class Service {
   }
 
   void ondata(Uint8List data) {
-    print(data.toString());
+//    print(data.toString());
 
     ByteDataReader byteDataReader = new ByteDataReader();
     byteDataReader.add(data);
@@ -55,19 +58,40 @@ class Service {
 
 //    print(Utf8Codec().decode(data.sublist(0, 4)) == "k3gV");
 
-    Uint8List readMagic = byteDataReader.read(4);
-    print(readMagic);
+//    Uint8List readMagic = byteDataReader.read(4);
+//    print(readMagic);
+//
+//    int version = byteDataReader.readUint8();
+//    print("version $version");
+//
+//    if (!_listsAreEqual(magic, readMagic)) {
+//      print("wrong magic, disconnect!");
+//    }
+//
+//    Uint8List nonce = byteDataReader.read(20);
+//    print("server identity: " + HEX.encode(nonce).toUpperCase());
+//    print(Base58Codec(_bitcoinAlphabet).encode(nonce));
+//
+//
+//    print(byteDataReader.remainingLength);
+//
+//    print(byteDataReader.readUint(2));
 
-    int version = byteDataReader.readUint8();
-    print("version $version");
+    ByteBuffer buffer = ByteBuffer.fromBuffer(data.buffer);
 
-    if (!_listsAreEqual(magic, readMagic)) {
+//    print(buffer.readBytes(4));
+    if (!_listsAreEqual(magic, buffer.readBytes(4))) {
       print("wrong magic, disconnect!");
     }
 
-    Uint8List nonce = byteDataReader.read(20);
-    print("server identity: " + HEX.encode(nonce).toUpperCase());
+    int version = buffer.readByte();
+    print("version $version");
+
+    Uint8List nonce = buffer.readBytes(20);
+//    print("server identity: " + HEX.encode(nonce).toUpperCase());
     print(Base58Codec(_bitcoinAlphabet).encode(nonce));
+
+    print(buffer.readUnsignedShort());
   }
 
   void dataHandler(data) {
