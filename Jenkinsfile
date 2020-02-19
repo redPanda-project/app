@@ -2,18 +2,26 @@ pipeline {
     agent {
         docker {
             image 'cirrusci/flutter'
-            args '-v /root/.m2:/root/.m2'
+            args '-u root'
         }
     }
     stages {
-        stage ('Download lcov converter') {
+        stage ('Prepare lcov converter') {
             steps {
                 sh "curl -O https://raw.githubusercontent.com/eriwen/lcov-to-cobertura-xml/master/lcov_cobertura/lcov_cobertura.py"
+                sh 'apt-get update'
+                sh 'apt-get -y install python3-pip'
+                sh 'python3 -m pip install setuptools'
             }
         }
         stage ('Flutter Doctor') {
             steps {
                 sh "flutter doctor"
+            }
+        }
+        stage ('Flutter get') {
+            steps {
+                sh 'flutter pub get'
             }
         }
         stage('Test') {
@@ -29,7 +37,8 @@ pipeline {
         }
         stage('Run Analyzer') {
             steps {
-                sh "dartanalyzer --options analysis_options.yaml ."
+                //sh "dartanalyzer --options analysis_options.yaml ."
+                sh 'dartanalyzer .'
             }
         }
     }
