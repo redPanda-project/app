@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data' hide ByteBuffer;
 import 'dart:typed_data';
@@ -11,6 +12,9 @@ import 'dart:convert';
 
 import 'package:hex/hex.dart';
 import 'package:redpanda/redPanda/ByteBuffer.dart';
+import 'package:redpanda/redPanda/KademliaId.dart';
+import 'package:redpanda/redPanda/Peer.dart';
+import 'package:redpanda/redPanda/Settings.dart';
 
 const String _bitcoinAlphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -18,7 +22,7 @@ const String _bitcoinAlphabet =
 class Service {
   Socket socket;
 
-  final magic = Utf8Codec().encode("k3gV");
+  KademliaId nodeId = new KademliaId();
 
   start() {
 //    var utf8codec = new Utf8Codec();
@@ -37,61 +41,50 @@ class Service {
 //    print("test " + utf8codec.decode(byteDataReader.read(11)));
 //    print('' + "");
 
-    Socket.connect("redpanda.im", 59558).then((socket) {
+//    Socket.connect("redpanda.im", 59558).then((socket) {
+
+    List<String> split = Settings.seedNodeList[0].split(":");
+    String ip = split[0];
+    int port = int.tryParse(split[1]);
+    if (port == null) {
+      return;
+    }
+    Peer peer = new Peer(ip, port);
+
+    Socket.connect(peer.ip, peer.port).then((socket) {
       print('Connected to: '
           '${socket.remoteAddress.address}:${socket.remotePort}');
-      socket.write("qwert");
-      socket.listen(ondata);
+
+//      socket.add(utf8.encode("3kgV"));
+//      socket.write(utf8.encode("3kgV"));
+
+      ByteBuffer byteBuffer =
+          new ByteBuffer(4 + 1 + KademliaId.ID_LENGTH_BYTES + 4);
+      byteBuffer.writeList('3kgV'.codeUnits);
+      byteBuffer.writeByte(8);
+      byteBuffer.writeList(nodeId.bytes);
+      print(byteBuffer.buffer.asUint8List());
+      byteBuffer.writeInt(59558);
+      print(byteBuffer.buffer.asUint8List());
+
+      socket.add(byteBuffer.buffer.asInt8List());
+
+//      socket.writeCharCode(8);
+      socket.add(nodeId.bytes);
+//      socket.add(59558);
+      socket.add(
+          "asdafwadwdadst4bt2tz3b4r2tz3b42xdtz3r4fbxd2tz3b4fd2tz3bd4f2tz3d4f2tz34bdf2tz4f2z4fd"
+              .codeUnits);
+      socket.add(
+          "asdafwadwdadst4bt2tz3b4r2tz3b42xdtz3r4fbxd2tz3b4fd2tz3bd4f2tz3d4f2tz34bdf2tz4f2z4fd"
+              .codeUnits);
+      socket.add(
+          "asdafwadwdadst4bt2tz3b4r2tz3b42xdtz3r4fbxd2tz3b4fd2tz3bd4f2tz3d4f2tz34bdf2tz4f2z4fd"
+              .codeUnits);
+//      socket.flush();
+      socket.listen(peer.ondata);
 //      socket.destroy();
     });
-  }
-
-  void ondata(Uint8List data) {
-//    print(data.toString());
-
-    ByteDataReader byteDataReader = new ByteDataReader();
-    byteDataReader.add(data);
-
-//    print(Utf8Codec().decode(data.sublist(0, 4)));
-//    print(magic);
-//    print(data.sublist(0, 4));
-
-//    print(Utf8Codec().decode(data.sublist(0, 4)) == "k3gV");
-
-//    Uint8List readMagic = byteDataReader.read(4);
-//    print(readMagic);
-//
-//    int version = byteDataReader.readUint8();
-//    print("version $version");
-//
-//    if (!_listsAreEqual(magic, readMagic)) {
-//      print("wrong magic, disconnect!");
-//    }
-//
-//    Uint8List nonce = byteDataReader.read(20);
-//    print("server identity: " + HEX.encode(nonce).toUpperCase());
-//    print(Base58Codec(_bitcoinAlphabet).encode(nonce));
-//
-//
-//    print(byteDataReader.remainingLength);
-//
-//    print(byteDataReader.readUint(2));
-
-    ByteBuffer buffer = ByteBuffer.fromBuffer(data.buffer);
-
-//    print(buffer.readBytes(4));
-    if (!_listsAreEqual(magic, buffer.readBytes(4))) {
-      print("wrong magic, disconnect!");
-    }
-
-    int version = buffer.readByte();
-    print("version $version");
-
-    Uint8List nonce = buffer.readBytes(20);
-//    print("server identity: " + HEX.encode(nonce).toUpperCase());
-    print(Base58Codec(_bitcoinAlphabet).encode(nonce));
-
-    print(buffer.readUnsignedShort());
   }
 
   void dataHandler(data) {

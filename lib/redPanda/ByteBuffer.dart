@@ -8,15 +8,17 @@ class ByteBuffer {
   Endian endian;
   int _offset = 0;
 
-  ByteBuffer([int length = 0, this.endian = Endian.little]) {
+  ByteData get byteData => _byteData;
+
+  ByteBuffer([int length = 0, this.endian = Endian.big]) {
     final buff = Uint8Buffer(length);
     _byteData = ByteData.view(buff.buffer);
   }
 
-  ByteBuffer.fromByteData(this._byteData, [this.endian = Endian.little]);
+  ByteBuffer.fromByteData(this._byteData, [this.endian = Endian.big]);
 
   factory ByteBuffer.fromBuffer(prefix0.ByteBuffer buffer,
-      [int offset = 0, int length = null, Endian endian = Endian.little]) {
+      [int offset = 0, int length = null, Endian endian = Endian.big]) {
     length ??= buffer.lengthInBytes - offset;
 
     final view = ByteData.view(buffer, offset, length);
@@ -48,6 +50,12 @@ class ByteBuffer {
 
   void writeByte(int value) =>
       _setNum<int>((i, v, _) => _byteData.setInt8(i, v), value, 1);
+
+  void writeList(List<int> bytes) {
+    Uint8List asUint8List = byteData.buffer.asUint8List();
+    asUint8List.setAll(_offset, bytes);
+    _offset += bytes.length;
+  }
 
   void writeUnsignedByte(int value) =>
       _setNum<int>((i, v, _) => _byteData.setUint8(i, v), value, 1);

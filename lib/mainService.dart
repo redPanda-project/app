@@ -10,7 +10,7 @@ import 'package:cryptography/cryptography.dart';
 
 void main() async {
   Service service = new Service();
-//  service.start();
+  service.start();
 
   chacha20_example();
 
