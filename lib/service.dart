@@ -72,15 +72,6 @@ class Service {
 //      socket.writeCharCode(8);
       socket.add(nodeId.bytes);
 //      socket.add(59558);
-      socket.add(
-          "asdafwadwdadst4bt2tz3b4r2tz3b42xdtz3r4fbxd2tz3b4fd2tz3bd4f2tz3d4f2tz34bdf2tz4f2z4fd"
-              .codeUnits);
-      socket.add(
-          "asdafwadwdadst4bt2tz3b4r2tz3b42xdtz3r4fbxd2tz3b4fd2tz3bd4f2tz3d4f2tz34bdf2tz4f2z4fd"
-              .codeUnits);
-      socket.add(
-          "asdafwadwdadst4bt2tz3b4r2tz3b42xdtz3r4fbxd2tz3b4fd2tz3bd4f2tz3d4f2tz34bdf2tz4f2z4fd"
-              .codeUnits);
 //      socket.flush();
       socket.listen(peer.ondata);
 //      socket.destroy();
