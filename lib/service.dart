@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:core';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data' hide ByteBuffer;
@@ -15,6 +17,7 @@ import 'package:redpanda/redPanda/ByteBuffer.dart';
 import 'package:redpanda/redPanda/KademliaId.dart';
 import 'package:redpanda/redPanda/Peer.dart';
 import 'package:redpanda/redPanda/Settings.dart';
+import 'package:redpanda/redPanda/Utils.dart';
 
 const String _bitcoinAlphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -22,9 +25,52 @@ const String _bitcoinAlphabet =
 class Service {
   Socket socket;
 
-  KademliaId nodeId = new KademliaId();
+  KademliaId nodeId;
+  List<Peer> peerlist;
 
-  start() {
+  Service(this.nodeId) {
+    peerlist = new List();
+  }
+
+  void loop() {
+    if (peerlist.length < 3) {
+      reseed();
+    }
+
+    for (Peer peer in peerlist) {
+      if (peer.connecting || peer.connected) {
+        if (new DateTime.now().millisecondsSinceEpoch -
+                peer.lastActionOnConnection >
+            1000 * 5) {
+          if (peer.socket != null) {
+            peer.socket.destroy();
+          }
+
+          for (Function setState in Utils.states) {
+            setState(() {
+              // This call to setState tells the Flutter framework that something has
+              // changed in this State, which causes it to rerun the build method below
+              // so that the display can reflect the updated values. If we changed
+              // _counter without calling setState(), then the build method would not be
+              // called again, and so nothing would appear to happen.
+              peer.connecting = false;
+              peer.connected = false;
+            });
+          }
+        }
+
+        continue;
+      }
+
+      connectTo(peer);
+    }
+  }
+
+  void start() {
+    loop();
+    const oneSec = const Duration(seconds: 2);
+    new Timer.periodic(oneSec, (Timer t) => {loop()});
+
 //    var utf8codec = new Utf8Codec();
 //    var encode = utf8codec.encode("test string");
 //
@@ -43,20 +89,46 @@ class Service {
 
 //    Socket.connect("redpanda.im", 59558).then((socket) {
 
-    List<String> split = Settings.seedNodeList[0].split(":");
-    String ip = split[0];
-    int port = int.tryParse(split[1]);
-    if (port == null) {
-      return;
-    }
-    Peer peer = new Peer(ip, port);
+//    List<String> split = Settings.seedNodeList[0].split(":");
+//    String ip = split[0];
+//    int port = int.tryParse(split[1]);
+//    if (port == null) {
+//      return;
+//    }
+//    Peer peer = new Peer(ip, port);
+  }
 
-    Socket.connect(peer.ip, peer.port).then((socket) {
+  void connectTo(Peer peer) {
+    for (Function setState in Utils.states) {
+      setState(() {
+        // This call to setState tells the Flutter framework that something has
+        // changed in this State, which causes it to rerun the build method below
+        // so that the display can reflect the updated values. If we changed
+        // _counter without calling setState(), then the build method would not be
+        // called again, and so nothing would appear to happen.
+        peer.connecting = true;
+      });
+    }
+
+    peer.lastActionOnConnection = new DateTime.now().millisecondsSinceEpoch;
+
+    Socket.connect(peer.ip, peer.port).catchError(peer.onError).then((socket) {
+      if (socket == null) {
+        peer.connecting = false;
+//        print('error connecting...');
+        return;
+      }
+
+      peer.socket = socket;
+
       print('Connected to: '
           '${socket.remoteAddress.address}:${socket.remotePort}');
+      socket.handleError(peer.onError);
 
-//      socket.add(utf8.encode("3kgV"));
-//      socket.write(utf8.encode("3kgV"));
+      socket.done.then((value) => {peer.onError(value)});
+
+      //      socket.add(utf8.encode("3kgV"));
+      //      socket.write(utf8.encode("3kgV"));
 
       ByteBuffer byteBuffer =
           new ByteBuffer(4 + 1 + KademliaId.ID_LENGTH_BYTES + 4);
@@ -69,12 +141,12 @@ class Service {
 
       socket.add(byteBuffer.buffer.asInt8List());
 
-//      socket.writeCharCode(8);
+      //      socket.writeCharCode(8);
       socket.add(nodeId.bytes);
-//      socket.add(59558);
-//      socket.flush();
+      //      socket.add(59558);
+      //      socket.flush();
       socket.listen(peer.ondata);
-//      socket.destroy();
+      //      socket.destroy();
     });
   }
 
@@ -102,5 +174,25 @@ class Service {
       else
         return list2[i] == val;
     });
+  }
+
+  void reseed() {
+//    print('reseed...');
+    for (String str in Settings.seedNodeList) {
+      List<String> split = str.split(":");
+      String ip = split[0];
+      int port = int.tryParse(split[1]);
+      if (port == null) {
+        return;
+      }
+      Peer peer = new Peer(ip, port);
+
+      if (!peerlist.contains(peer)) {
+//        print('peer not in list add');
+        peerlist.add(peer);
+      } else {
+//        print('peer in list do not add');
+      }
+    }
   }
 }

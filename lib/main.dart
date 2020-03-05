@@ -1,11 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:redpanda/redPanda/KademliaId.dart';
+import 'package:redpanda/redPanda/Peer.dart';
+import 'package:redpanda/redPanda/Utils.dart';
 import 'package:redpanda/service.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+Service service;
+
+
 
 void main() async {
   runApp(MyApp());
-  Service service = new Service();
+  runService();
+}
+
+void runService() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String nodeIdString = prefs.getString('nodeIdString');
+  KademliaId kademliaId;
+  if (nodeIdString == null) {
+    kademliaId = new KademliaId();
+    var string = kademliaId.toString();
+    await prefs.setString('nodeIdString', string);
+  } else {
+    kademliaId = KademliaId.fromString(nodeIdString);
+  }
+
+  service = new Service(kademliaId);
   service.start();
 }
 
@@ -55,8 +79,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   void _incrementCounter() {
-    Service service = new Service();
-    service.start();
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -69,6 +91,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    Utils.states.add(setState);
+
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -115,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
     var listView = ListView.builder(
         scrollDirection: Axis.vertical,
         padding: const EdgeInsets.all(0),
-        itemCount: _counter,
+        itemCount: service?.peerlist?.length ?? 0,
         itemBuilder: (BuildContext context, int index) {
           return makeCard(context, index);
 //          return Container(
@@ -189,7 +213,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         title: Text(
-          "Friend $index/$_counter",
+//          "Friend $index/$_counter " + service?.peerlist[0].ip ?? "no ip",
+          "" +
+              (service?.peerlist[index].ip ?? "no ip ") +
+              " " +
+              (service?.peerlist[index].connecting.toString() ?? "no ip") +
+              " $index/$_counter",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
@@ -197,7 +226,9 @@ class _MyHomePageState extends State<MyHomePage> {
         subtitle: Row(
           children: <Widget>[
             Icon(Icons.vpn_key, color: Colors.yellowAccent),
-            Text(" Some random $index text",
+            Text(
+                "Connected: " +
+                    (service?.peerlist[index].connecting.toString() ?? "no"),
                 style: TextStyle(color: Colors.white))
           ],
         ),

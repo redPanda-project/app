@@ -1,25 +1,23 @@
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data' hide ByteBuffer;
 import 'dart:typed_data';
-import 'dart:typed_data' as prefix0;
 
-import 'package:base58check/base58.dart';
-import 'package:base58check/base58check.dart';
 import 'package:buffer/buffer.dart';
-import 'package:byte_array/byte_array.dart';
-import 'dart:convert';
-
-import 'package:hex/hex.dart';
 import 'package:redpanda/redPanda/ByteBuffer.dart';
 import 'package:redpanda/redPanda/KademliaId.dart';
-import 'package:redpanda/redPanda/Peer.dart';
 import 'package:redpanda/redPanda/Utils.dart';
 
 class Peer {
-  bool handshakeParsed = false;
   String _ip;
   int _port;
+
+  bool handshakeParsed = false;
+  bool connecting = false;
+  bool connected = false;
+
+  int lastActionOnConnection = 0;
+
+  Socket socket;
 
   Peer(this._ip, this._port);
 
@@ -29,6 +27,8 @@ class Peer {
 
   void ondata(Uint8List data) {
 //    print(data.toString());
+
+
 
     ByteDataReader byteDataReader = new ByteDataReader();
     byteDataReader.add(data);
@@ -82,5 +82,18 @@ class Peer {
     } else {
       print("cmd: " + buffer.readByte().toString());
     }
+  }
+
+  bool operator ==(other) {
+    Peer otherPeer = other as Peer;
+
+    if (otherPeer.ip == ip) {
+      return true;
+    }
+  }
+
+  void onError(error) {
+//    print("error found: $error");
+    print("error found...");
   }
 }

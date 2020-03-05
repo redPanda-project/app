@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
+import 'package:redpanda/redPanda/KademliaId.dart';
 import 'package:redpanda/service.dart';
 
 void main() async {
   runApp(MyApp());
-  Service service = new Service();
+  Service service = new Service(new KademliaId());
   service.start();
 }
 
@@ -54,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   void _incrementCounter() {
-    Service service = new Service();
+    Service service = new Service(new KademliaId());
     service.start();
     setState(() {
       // This call to setState tells the Flutter framework that something has

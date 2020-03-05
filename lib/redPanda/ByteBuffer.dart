@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:typed_data' as prefix0;
+
 import 'package:typed_data/typed_buffers.dart';
 
 /// Read and write to an array of bytes

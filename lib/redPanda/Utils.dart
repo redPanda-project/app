@@ -10,6 +10,7 @@ class Utils {
       "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   static Base58Codec base58codec = new Base58Codec(_bitcoinAlphabet);
   static final MAGIC = Utf8Codec().encode("k3gV");
+  static List<Function> states = new List();
 
   static Uint8List randBytes(int n) {
     final Uint8List bytes = Uint8List(n);
@@ -21,6 +22,10 @@ class Utils {
 
   static String base58encode(Uint8List bytes) {
     return base58codec.encode(bytes);
+  }
+
+  static Uint8List base58decode(String string) {
+    return base58codec.decode(string);
   }
 
   static bool listsAreEqual(list1, list2) {
