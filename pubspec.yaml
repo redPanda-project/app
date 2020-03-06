@@ -1,5 +1,5 @@
 name: redpanda
-description: redPanda p2p chat app.
+description: redpanda - peer to peer messenger
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -20,6 +20,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^0.1.2
+
   buffer: ^1.0.6
   shared_preferences: ^0.5.3+4
   fluttertoast: ^3.1.3
@@ -28,10 +32,8 @@ dependencies:
   byte_array: ^0.1.6
   pointycastle: ^1.0.2
   cryptography: ^0.1.2
+  google_sign_in: ^4.1.4
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.2
 
 dev_dependencies:
   flutter_test:

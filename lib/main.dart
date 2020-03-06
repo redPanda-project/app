@@ -8,13 +8,27 @@ import 'package:redpanda/service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:google_sign_in/google_sign_in.dart';
+
 Service service;
 
-
+GoogleSignIn _googleSignIn = GoogleSignIn(
+  scopes: ['openid'],
+);
 
 void main() async {
+  _handleSignIn();
+
   runApp(MyApp());
   runService();
+}
+
+Future<void> _handleSignIn() async {
+  try {
+    await _googleSignIn.signIn();
+  } catch (error) {
+    print(error);
+  }
 }
 
 void runService() async {
