@@ -163,26 +163,47 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _incrementCounter() {
+    if (user != null) {
+      final DocumentReference postRef =
+          Firestore.instance.collection('users').document(user.uid);
+      Firestore.instance.runTransaction((Transaction tx) async {
+        DocumentSnapshot postSnapshot = await tx.get(postRef);
+        if (postSnapshot.exists) {
+//          _counter = postSnapshot.data['likesCount'] + 1;
+          await tx.update(postRef, <String, dynamic>{
+            'likesCount': postSnapshot.data['likesCount'] + 1
+          });
+        } else {
+          await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+        }
+      });
+      _incrementCounterGlobal();
+    }
+
+//    setState(() {
+//      // This call to setState tells the Flutter framework that something has
+//      // changed in this State, which causes it to rerun the build method below
+//      // so that the display can reflect the updated values. If we changed
+//      // _counter without calling setState(), then the build method would not be
+//      // called again, and so nothing would appear to happen.
+//      _counter++;
+//    });
+  }
+
+  void _incrementCounterGlobal() {
     final DocumentReference postRef =
-        Firestore.instance.collection('users').document(user.uid);
+        Firestore.instance.collection('global').document('counter');
     Firestore.instance.runTransaction((Transaction tx) async {
       DocumentSnapshot postSnapshot = await tx.get(postRef);
       if (postSnapshot.exists) {
-        _counter = postSnapshot.data['likesCount'] + 1;
-        await tx.update(postRef, <String, dynamic>{
-          'likesCount': postSnapshot.data['likesCount'] + 1
+        setState(() {
+        _counter = postSnapshot.data['counter'] + 1;
         });
+        await tx.update(postRef,
+            <String, dynamic>{'counter': postSnapshot.data['counter'] + 1});
       } else {
-        await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+        await tx.set(postRef, <String, dynamic>{'counter': 0});
       }
-    });
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
     });
   }
 
