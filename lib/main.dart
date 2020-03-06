@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:preferences/preference_service.dart';
+import 'package:redpanda/activities/preferences.dart';
 import 'package:redpanda/redPanda/KademliaId.dart';
 import 'package:redpanda/redPanda/Peer.dart';
 import 'package:redpanda/redPanda/Utils.dart';
@@ -12,22 +14,32 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 Service service;
 
-GoogleSignIn _googleSignIn = GoogleSignIn(
+GoogleSignIn googleSignIn = GoogleSignIn(
   scopes: ['openid'],
 );
+GoogleSignInAccount googleSignInAccount;
+String name = "unknown";
 
 void main() async {
-  _handleSignIn();
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await PrefService.init(prefix: 'pref_');
 
   runApp(MyApp());
-  runService();
+//  runService();
 }
 
-Future<void> _handleSignIn() async {
+Future<void> handleSignIn(setState) async {
   try {
-    await _googleSignIn.signIn();
+    googleSignInAccount = await googleSignIn.signIn();
+    print('signed in: ' + googleSignInAccount.toString());
+    setState(() {
+      name = googleSignInAccount.displayName;
+    });
+
+//    await _googleSignIn.signOut();
   } catch (error) {
-    print(error);
+    print("error singning in..." + error);
   }
 }
 
@@ -92,6 +104,12 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
+  @override
+  void initState() {
+    handleSignIn(setState);
+    Utils.states.add(setState);
+  }
+
   void _incrementCounter() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
@@ -105,8 +123,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    Utils.states.add(setState);
-
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -134,7 +150,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   timeInSecForIos: 1,
                   backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
                   textColor: Colors.white,
-                  fontSize: 16.0)
+                  fontSize: 16.0),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => Preferences(googleSignIn)),
+              )
             },
             padding: EdgeInsets.only(right: 30),
           )
@@ -184,7 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'You have pushed the button this many times: $_counter',
+          'Hello $name: $_counter',
         ),
 //          Text(
 //            '$_counter',
