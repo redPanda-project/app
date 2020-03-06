@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'cirrusci/flutter'
-            args '-u root'
+            args '-u root -v androidSDKvol:/opt/android-sdk-linux/ -v androidDir:/root/.android/'
         }
     }
     stages {
@@ -39,6 +39,11 @@ pipeline {
             steps {
                 //sh "dartanalyzer --options analysis_options.yaml ."
                 sh 'dartanalyzer .'
+            }
+        }
+        stage('Build Apk') {
+            steps {
+                sh 'flutter build apk'
             }
         }
     }

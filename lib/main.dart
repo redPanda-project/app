@@ -26,12 +26,20 @@ void main() async {
   await PrefService.init(prefix: 'pref_');
 
   runApp(MyApp());
-//  runService();
+  runService();
 }
 
 Future<void> handleSignIn(setState) async {
   try {
-    googleSignInAccount = await googleSignIn.signIn();
+    /**
+     * try to login without user interaction
+     */
+    googleSignInAccount = await googleSignIn.signInSilently();
+
+    if (googleSignInAccount == null) {
+      // silent signin was not possible, show popup for login...
+      googleSignInAccount = await googleSignIn.signIn();
+    }
     print('signed in: ' + googleSignInAccount.toString());
     setState(() {
       name = googleSignInAccount.displayName;
