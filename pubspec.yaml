@@ -34,6 +34,8 @@ dependencies:
   cryptography: ^0.1.2
   google_sign_in: ^4.1.4
   preferences: ^5.1.0
+  cloud_firestore: ^0.13.4
+  firebase_auth: ^0.15.5+2
 
 
 dev_dependencies:

@@ -11,14 +11,21 @@ import 'package:redpanda/service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 Service service;
+
+int _counter = 0;
 
 GoogleSignIn googleSignIn = GoogleSignIn(
   scopes: ['openid'],
 );
+final FirebaseAuth _auth = FirebaseAuth.instance;
 GoogleSignInAccount googleSignInAccount;
 String name = "unknown";
+
+FirebaseUser user;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +33,7 @@ void main() async {
   await PrefService.init(prefix: 'pref_');
 
   runApp(MyApp());
-  runService();
+//  runService();
 }
 
 Future<void> handleSignIn(setState) async {
@@ -43,6 +50,45 @@ Future<void> handleSignIn(setState) async {
     print('signed in: ' + googleSignInAccount.toString());
     setState(() {
       name = googleSignInAccount.displayName;
+    });
+
+    final GoogleSignInAuthentication googleAuth =
+        await googleSignInAccount.authentication;
+
+    final AuthCredential credential = GoogleAuthProvider.getCredential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    user = (await _auth.signInWithCredential(credential)).user;
+    print("signed in " + user.displayName);
+
+    Firestore.instance
+        .collection('users')
+        .document(user.uid)
+        .get()
+        .then((DocumentSnapshot ds) {
+      if (ds.exists) {
+        print("likes: " + ds.data['likesCount'].toString());
+        setState(() {
+          _counter = ds.data['likesCount'];
+        });
+      }
+    });
+
+    final DocumentReference postRef =
+        Firestore.instance.collection('users').document(user.uid);
+    Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot postSnapshot = await tx.get(postRef);
+      if (postSnapshot.exists) {
+        _counter = postSnapshot.data['likesCount'] + 1;
+        await tx.update(postRef, <String, dynamic>{
+          'likesCount': postSnapshot.data['likesCount'] + 1,
+          'lastLogin': DateTime.now().millisecondsSinceEpoch
+        });
+      } else {
+        await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+      }
     });
 
 //    await _googleSignIn.signOut();
@@ -110,8 +156,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
   @override
   void initState() {
     handleSignIn(setState);
@@ -119,6 +163,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _incrementCounter() {
+    final DocumentReference postRef =
+        Firestore.instance.collection('users').document(user.uid);
+    Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot postSnapshot = await tx.get(postRef);
+      if (postSnapshot.exists) {
+        _counter = postSnapshot.data['likesCount'] + 1;
+        await tx.update(postRef, <String, dynamic>{
+          'likesCount': postSnapshot.data['likesCount'] + 1
+        });
+      } else {
+        await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+      }
+    });
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
