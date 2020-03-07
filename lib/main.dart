@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -28,11 +30,32 @@ String name = "unknown";
 FirebaseUser user;
 
 void main() async {
+  // This captures errors reported by the Flutter framework.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (Service.isInDebugMode) {
+      // In development mode, simply print to console.
+      FlutterError.dumpErrorToConsole(details);
+    } else {
+      // In production mode, report to the application zone to report to
+      // Sentry.
+      Zone.current.handleUncaughtError(details.exception, details.stack);
+    }
+  };
+
   WidgetsFlutterBinding.ensureInitialized();
 
   await PrefService.init(prefix: 'pref_');
 
-  runApp(MyApp());
+  Service.sentry.captureException(exception: new Exception("test message"));
+
+//  runApp(MyApp());
+  runZoned<Future<void>>(() async {
+    runApp(MyApp());
+  }, onError: (error, stackTrace) {
+    // Whenever an error occurs, call the `_reportError` function. This sends
+    // Dart errors to the dev console or Sentry depending on the environment.
+    Service.reportError(error, stackTrace);
+  });
 //  runService();
 }
 
@@ -197,7 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
       DocumentSnapshot postSnapshot = await tx.get(postRef);
       if (postSnapshot.exists) {
         setState(() {
-        _counter = postSnapshot.data['counter'] + 1;
+          _counter = postSnapshot.data['counter'] + 1;
         });
         await tx.update(postRef,
             <String, dynamic>{'counter': postSnapshot.data['counter'] + 1});

@@ -36,6 +36,7 @@ dependencies:
   preferences: ^5.1.0
   cloud_firestore: ^0.13.4
   firebase_auth: ^0.15.5+2
+  sentry: ">=3.0.0 <4.0.0"
 
 
 dev_dependencies:
