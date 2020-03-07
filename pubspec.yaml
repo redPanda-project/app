@@ -34,7 +34,11 @@ dependencies:
   cryptography: ^0.1.2
   google_sign_in: ^4.1.4
   preferences: ^5.1.0
-  cloud_firestore: ^0.13.4
+  cloud_firestore:
+    git:
+      url: https://github.com/pY4x3g/flutterfire.git
+      ref: bd4007a28b27fc5838d2849dae6ba875a8b635e2
+      path: packages/cloud_firestore/cloud_firestore
   firebase_auth: ^0.15.5+2
   sentry: ">=3.0.0 <4.0.0"
 

@@ -46,7 +46,7 @@ void main() async {
 
   await PrefService.init(prefix: 'pref_');
 
-  Service.sentry.captureException(exception: new Exception("test message"));
+//  Service.sentry.captureException(exception: new Exception("test message"));
 
 //  runApp(MyApp());
   runZoned<Future<void>>(() async {
@@ -86,25 +86,24 @@ Future<void> handleSignIn(setState) async {
     user = (await _auth.signInWithCredential(credential)).user;
     print("signed in " + user.displayName);
 
-    Firestore.instance
-        .collection('users')
-        .document(user.uid)
-        .get()
-        .then((DocumentSnapshot ds) {
-      if (ds.exists) {
-        print("likes: " + ds.data['likesCount'].toString());
-        setState(() {
-          _counter = ds.data['likesCount'];
-        });
-      }
-    });
+//    Firestore.instance
+//        .collection('global')
+//        .document('counter')
+//        .get()
+//        .then((DocumentSnapshot ds) {
+//      if (ds.exists) {
+//        setState(() {
+//          _counter = ds.data['counter'];
+//        });
+//      }
+//    });
 
     final DocumentReference postRef =
         Firestore.instance.collection('users').document(user.uid);
     Firestore.instance.runTransaction((Transaction tx) async {
       DocumentSnapshot postSnapshot = await tx.get(postRef);
       if (postSnapshot.exists) {
-        _counter = postSnapshot.data['likesCount'] + 1;
+//        _counter = postSnapshot.data['likesCount'] + 1;
         await tx.update(postRef, <String, dynamic>{
           'likesCount': postSnapshot.data['likesCount'] + 1,
           'lastLogin': DateTime.now().millisecondsSinceEpoch
@@ -112,6 +111,17 @@ Future<void> handleSignIn(setState) async {
       } else {
         await tx.set(postRef, <String, dynamic>{'likesCount': 0});
       }
+    });
+    
+    CollectionReference reference = Firestore.instance.collection('global');
+    reference.snapshots().listen((querySnapshot) {
+      querySnapshot.documentChanges.forEach((DocumentChange change) {
+        print('change: ' + change.document.data.toString());
+        setState(() {
+          _counter = change.document.data['counter'];
+        });
+        // Do something with change
+      });
     });
 
 //    await _googleSignIn.signOut();
@@ -143,6 +153,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'redPanda',
       theme: ThemeData(
+//        brightness: Brightness.dark,
         // This is the theme of your application.
         //
         // Try running your application with "flutter run". You'll see the
@@ -153,8 +164,10 @@ class MyApp extends StatelessWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
 //        primarySwatch: Colors.deepOrange,
-        primaryColor: Color.fromRGBO(57, 68, 87, 1.0),
+//        primaryColor: Color.fromRGBO(57, 68, 87, 1.0),
+        primaryColor: Color.fromRGBO(57, 68, 87, 1),
       ),
+      darkTheme: ThemeData(brightness: Brightness.dark),
       home: MyHomePage(title: 'redPanda'),
     );
   }
@@ -187,19 +200,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _incrementCounter() {
     if (user != null) {
-      final DocumentReference postRef =
-          Firestore.instance.collection('users').document(user.uid);
-      Firestore.instance.runTransaction((Transaction tx) async {
-        DocumentSnapshot postSnapshot = await tx.get(postRef);
-        if (postSnapshot.exists) {
-//          _counter = postSnapshot.data['likesCount'] + 1;
-          await tx.update(postRef, <String, dynamic>{
-            'likesCount': postSnapshot.data['likesCount'] + 1
-          });
-        } else {
-          await tx.set(postRef, <String, dynamic>{'likesCount': 0});
-        }
-      });
+//      final DocumentReference postRef =
+//          Firestore.instance.collection('users').document(user.uid);
+//      Firestore.instance.runTransaction((Transaction tx) async {
+//        DocumentSnapshot postSnapshot = await tx.get(postRef);
+//        if (postSnapshot.exists) {
+////          _counter = postSnapshot.data['likesCount'] + 1;
+//          await tx.update(postRef, <String, dynamic>{
+//            'likesCount': postSnapshot.data['likesCount'] + 1
+//          });
+//        } else {
+//          await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+//        }
+//      });
       _incrementCounterGlobal();
     }
 
@@ -219,9 +232,9 @@ class _MyHomePageState extends State<MyHomePage> {
     Firestore.instance.runTransaction((Transaction tx) async {
       DocumentSnapshot postSnapshot = await tx.get(postRef);
       if (postSnapshot.exists) {
-        setState(() {
-          _counter = postSnapshot.data['counter'] + 1;
-        });
+//        setState(() {
+//          _counter = postSnapshot.data['counter'] + 1;
+//        });
         await tx.update(postRef,
             <String, dynamic>{'counter': postSnapshot.data['counter'] + 1});
       } else {
