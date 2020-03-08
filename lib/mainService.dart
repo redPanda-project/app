@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:pointycastle/export.dart';
+import 'package:redpanda/redPanda/KademliaId.dart';
 import 'package:redpanda/service.dart';
 
 import 'package:pointycastle/pointycastle.dart';
@@ -9,7 +10,7 @@ import 'package:pointycastle/pointycastle.dart';
 import 'package:cryptography/cryptography.dart';
 
 void main() async {
-  Service service = new Service();
+  Service service = new Service(new KademliaId());
   service.start();
 
   chacha20_example();

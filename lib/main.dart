@@ -1,11 +1,148 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:preferences/preference_service.dart';
+import 'package:redpanda/activities/preferences.dart';
+import 'package:redpanda/redPanda/KademliaId.dart';
+import 'package:redpanda/redPanda/Peer.dart';
+import 'package:redpanda/redPanda/Utils.dart';
 import 'package:redpanda/service.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+Service service;
+
+int _counter = 0;
+
+GoogleSignIn googleSignIn = GoogleSignIn(
+  scopes: ['openid'],
+);
+final FirebaseAuth _auth = FirebaseAuth.instance;
+GoogleSignInAccount googleSignInAccount;
+String name = "unknown";
+
+FirebaseUser user;
+
 void main() async {
-  runApp(MyApp());
-  Service service = new Service();
+  // This captures errors reported by the Flutter framework.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (Service.isInDebugMode) {
+      // In development mode, simply print to console.
+      FlutterError.dumpErrorToConsole(details);
+    } else {
+      // In production mode, report to the application zone to report to
+      // Sentry.
+      Zone.current.handleUncaughtError(details.exception, details.stack);
+    }
+  };
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await PrefService.init(prefix: 'pref_');
+
+//  Service.sentry.captureException(exception: new Exception("test message"));
+
+//  runApp(MyApp());
+  runZoned<Future<void>>(() async {
+    runApp(MyApp());
+  }, onError: (error, stackTrace) {
+    // Whenever an error occurs, call the `_reportError` function. This sends
+    // Dart errors to the dev console or Sentry depending on the environment.
+    Service.reportError(error, stackTrace);
+  });
+//  runService();
+}
+
+Future<void> handleSignIn(setState) async {
+  try {
+    /**
+     * try to login without user interaction
+     */
+    googleSignInAccount = await googleSignIn.signInSilently();
+
+    if (googleSignInAccount == null) {
+      // silent signin was not possible, show popup for login...
+      googleSignInAccount = await googleSignIn.signIn();
+    }
+    print('signed in: ' + googleSignInAccount.toString());
+    setState(() {
+      name = googleSignInAccount.displayName;
+    });
+
+    final GoogleSignInAuthentication googleAuth =
+        await googleSignInAccount.authentication;
+
+    final AuthCredential credential = GoogleAuthProvider.getCredential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    user = (await _auth.signInWithCredential(credential)).user;
+    print("signed in " + user.displayName);
+
+//    Firestore.instance
+//        .collection('global')
+//        .document('counter')
+//        .get()
+//        .then((DocumentSnapshot ds) {
+//      if (ds.exists) {
+//        setState(() {
+//          _counter = ds.data['counter'];
+//        });
+//      }
+//    });
+
+    final DocumentReference postRef =
+        Firestore.instance.collection('users').document(user.uid);
+    Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot postSnapshot = await tx.get(postRef);
+      if (postSnapshot.exists) {
+//        _counter = postSnapshot.data['likesCount'] + 1;
+        await tx.update(postRef, <String, dynamic>{
+          'likesCount': postSnapshot.data['likesCount'] + 1,
+          'lastLogin': DateTime.now().millisecondsSinceEpoch
+        });
+      } else {
+        await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+      }
+    });
+    
+    CollectionReference reference = Firestore.instance.collection('global');
+    reference.snapshots().listen((querySnapshot) {
+      querySnapshot.documentChanges.forEach((DocumentChange change) {
+        print('change: ' + change.document.data.toString());
+        setState(() {
+          _counter = change.document.data['counter'];
+        });
+        // Do something with change
+      });
+    });
+
+//    await _googleSignIn.signOut();
+  } catch (error) {
+    print("error singning in..." + error);
+  }
+}
+
+void runService() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String nodeIdString = prefs.getString('nodeIdString');
+  KademliaId kademliaId;
+  if (nodeIdString == null) {
+    kademliaId = new KademliaId();
+    var string = kademliaId.toString();
+    await prefs.setString('nodeIdString', string);
+  } else {
+    kademliaId = KademliaId.fromString(nodeIdString);
+  }
+
+  service = new Service(kademliaId);
   service.start();
 }
 
@@ -16,6 +153,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'redPanda',
       theme: ThemeData(
+//        brightness: Brightness.dark,
         // This is the theme of your application.
         //
         // Try running your application with "flutter run". You'll see the
@@ -26,8 +164,10 @@ class MyApp extends StatelessWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
 //        primarySwatch: Colors.deepOrange,
-        primaryColor: Color.fromRGBO(57, 68, 87, 1.0),
+//        primaryColor: Color.fromRGBO(57, 68, 87, 1.0),
+        primaryColor: Color.fromRGBO(57, 68, 87, 1),
       ),
+      darkTheme: ThemeData(brightness: Brightness.dark),
       home: MyHomePage(title: 'redPanda'),
     );
   }
@@ -52,18 +192,54 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  @override
+  void initState() {
+    handleSignIn(setState);
+    Utils.states.add(setState);
+  }
 
   void _incrementCounter() {
-    Service service = new Service();
-    service.start();
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+    if (user != null) {
+//      final DocumentReference postRef =
+//          Firestore.instance.collection('users').document(user.uid);
+//      Firestore.instance.runTransaction((Transaction tx) async {
+//        DocumentSnapshot postSnapshot = await tx.get(postRef);
+//        if (postSnapshot.exists) {
+////          _counter = postSnapshot.data['likesCount'] + 1;
+//          await tx.update(postRef, <String, dynamic>{
+//            'likesCount': postSnapshot.data['likesCount'] + 1
+//          });
+//        } else {
+//          await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+//        }
+//      });
+      _incrementCounterGlobal();
+    }
+
+//    setState(() {
+//      // This call to setState tells the Flutter framework that something has
+//      // changed in this State, which causes it to rerun the build method below
+//      // so that the display can reflect the updated values. If we changed
+//      // _counter without calling setState(), then the build method would not be
+//      // called again, and so nothing would appear to happen.
+//      _counter++;
+//    });
+  }
+
+  void _incrementCounterGlobal() {
+    final DocumentReference postRef =
+        Firestore.instance.collection('global').document('counter');
+    Firestore.instance.runTransaction((Transaction tx) async {
+      DocumentSnapshot postSnapshot = await tx.get(postRef);
+      if (postSnapshot.exists) {
+//        setState(() {
+//          _counter = postSnapshot.data['counter'] + 1;
+//        });
+        await tx.update(postRef,
+            <String, dynamic>{'counter': postSnapshot.data['counter'] + 1});
+      } else {
+        await tx.set(postRef, <String, dynamic>{'counter': 0});
+      }
     });
   }
 
@@ -96,7 +272,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   timeInSecForIos: 1,
                   backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
                   textColor: Colors.white,
-                  fontSize: 16.0)
+                  fontSize: 16.0),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => Preferences(googleSignIn)),
+              )
             },
             padding: EdgeInsets.only(right: 30),
           )
@@ -115,7 +296,7 @@ class _MyHomePageState extends State<MyHomePage> {
     var listView = ListView.builder(
         scrollDirection: Axis.vertical,
         padding: const EdgeInsets.all(0),
-        itemCount: _counter,
+        itemCount: service?.peerlist?.length ?? 0,
         itemBuilder: (BuildContext context, int index) {
           return makeCard(context, index);
 //          return Container(
@@ -146,7 +327,7 @@ class _MyHomePageState extends State<MyHomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'You have pushed the button this many times: $_counter',
+          'Hello $name: $_counter',
         ),
 //          Text(
 //            '$_counter',
@@ -189,7 +370,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         title: Text(
-          "Friend $index/$_counter",
+//          "Friend $index/$_counter " + service?.peerlist[0].ip ?? "no ip",
+          "" +
+              (service?.peerlist[index].ip ?? "no ip ") +
+              " " +
+              (service?.peerlist[index].connecting.toString() ?? "no ip") +
+              " $index/$_counter",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
@@ -197,7 +383,9 @@ class _MyHomePageState extends State<MyHomePage> {
         subtitle: Row(
           children: <Widget>[
             Icon(Icons.vpn_key, color: Colors.yellowAccent),
-            Text(" Some random $index text",
+            Text(
+                "Connected: " +
+                    (service?.peerlist[index].connecting.toString() ?? "no"),
                 style: TextStyle(color: Colors.white))
           ],
         ),

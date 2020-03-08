@@ -12,6 +12,10 @@ class KademliaId {
 
   KademliaId.fromBytes(this._bytes);
 
+  KademliaId.fromString(String string) {
+    _bytes = Utils.base58decode(string);
+  }
+
   KademliaId() {
     this._bytes = Utils.randBytes(ID_LENGTH_BYTES);
     print('new kadid: ' + toString());
@@ -19,10 +23,10 @@ class KademliaId {
 
   Uint8List get bytes => _bytes;
 
-  @override
   /**
    * Obtains a base58 representation of the bytes.
    */
+  @override
   String toString() {
     return Utils.base58encode(_bytes);
   }

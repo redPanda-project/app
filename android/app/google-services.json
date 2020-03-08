@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "987525438504",
+    "firebase_url": "https://redpanda-ac8d9.firebaseio.com",
+    "project_id": "redpanda-ac8d9",
+    "storage_bucket": "redpanda-ac8d9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:987525438504:android:5a2498d5d10125b2e9291d",
+        "android_client_info": {
+          "package_name": "im.redpanda"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "987525438504-pb581f7p06b40as5csh3i86qlrnjciq5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "im.redpanda",
+            "certificate_hash": "39c4a688538a937349761764b90c8193d7b74c53"
+          }
+        },
+        {
+          "client_id": "987525438504-ba6ga1tkoifbdsj1ufkkv5ghqb8h0s36.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "im.redpanda",
+            "certificate_hash": "7c16c54d283610bfac5acec42c8a41df23762586"
+          }
+        },
+        {
+          "client_id": "987525438504-50j6h34lm9a2j7u3dcfpn781bvb5s5l2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB688slBWLC6Wz5P358PZWAuXAcOt_SCAY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "987525438504-50j6h34lm9a2j7u3dcfpn781bvb5s5l2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
