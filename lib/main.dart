@@ -56,7 +56,7 @@ void main() async {
     // Dart errors to the dev console or Sentry depending on the environment.
     Service.reportError(error, stackTrace);
   });
-//  runService();
+  runService();
 }
 
 Future<void> handleSignIn(setState) async {
@@ -112,7 +112,7 @@ Future<void> handleSignIn(setState) async {
         await tx.set(postRef, <String, dynamic>{'likesCount': 0});
       }
     });
-    
+
     CollectionReference reference = Firestore.instance.collection('global');
     reference.snapshots().listen((querySnapshot) {
       querySnapshot.documentChanges.forEach((DocumentChange change) {
