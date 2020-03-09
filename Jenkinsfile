@@ -1,19 +1,11 @@
 pipeline {
     agent {
         docker {
-            image 'cirrusci/flutter'
-            args '-u root -v androidSDKvol:/opt/android-sdk-linux/ -v androidDir:/root/.android/'
+            image 'py4x3g/flutter_lcov_to_cobertura'
+            args '-u root -v androidSDKvol:/opt/android-sdk-linux/ -v androidDir:/root/.android/ -v flutterCache:/root/.pub-cache'
         }
     }
     stages {
-        stage ('Prepare lcov converter') {
-            steps {
-                sh "curl -O https://raw.githubusercontent.com/eriwen/lcov-to-cobertura-xml/master/lcov_cobertura/lcov_cobertura.py"
-                sh 'apt-get update'
-                sh 'apt-get -y install python3-pip'
-                sh 'python3 -m pip install setuptools'
-            }
-        }
         stage ('Flutter Doctor') {
             steps {
                 sh "flutter doctor"
@@ -30,15 +22,15 @@ pipeline {
             }
             post {
                 always {
-                    sh "python3 lcov_cobertura.py coverage/lcov.info --output coverage/coverage.xml"
+                    sh "python3 /usr/bin/lcov_cobertura.py coverage/lcov.info --output coverage/coverage.xml"
                     step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage/coverage.xml'])
                 }
             }
         }
         stage('Run Analyzer') {
             steps {
-                //sh "dartanalyzer --options analysis_options.yaml ."
-                sh 'dartanalyzer .'
+                sh 'chmod +x ./scripts/flutter-analyze.sh'
+                sh 'bash ./scripts/flutter-analyze.sh'
             }
         }
         stage('Build Apk') {
