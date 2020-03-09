@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'py4x3g/flutter_lcov_to_cobertura'
-            args '-u root -v androidSDKvol:/opt/android-sdk-linux/ -v androidDir:/root/.android/'
+            args '-u root -v androidSDKvol:/opt/android-sdk-linux/ -v androidDir:/root/.android/ -v flutterCache:/root/.pub-cache'
         }
     }
     stages {
@@ -29,8 +29,8 @@ pipeline {
         }
         stage('Run Analyzer') {
             steps {
-                //sh "dartanalyzer --options analysis_options.yaml ."
-                sh 'dartanalyzer .'
+                sh 'chmod +x ./scripts/flutter-analyze.sh'
+                sh 'bash ./scripts/flutter-analyze.sh'
             }
         }
         stage('Build Apk') {
