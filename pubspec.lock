@@ -79,7 +79,7 @@ packages:
       name: cloud_firestore_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.1"
+    version: "0.1.1+1"
   collection:
     dependency: transitive
     description:
@@ -364,9 +364,11 @@ packages:
   redpanda_light_client:
     dependency: "direct main"
     description:
-      path: "..\\redpanda_light_client"
-      relative: true
-    source: path
+      path: "."
+      ref: dev
+      resolved-ref: e1bf07c11362bbd5a35d5c16c10efa2a495d23c3
+      url: "https://github.com/redPanda-project/redpanda_light_client.git"
+    source: git
     version: "0.0.1"
   sentry:
     dependency: "direct main"
@@ -381,7 +383,7 @@ packages:
       name: shared_preferences
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.6+2"
+    version: "0.5.6+3"
   shared_preferences_macos:
     dependency: transitive
     description:
