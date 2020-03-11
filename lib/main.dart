@@ -12,9 +12,15 @@ import 'package:redpanda/service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:redpanda_light_client/src/main/ConnectionService.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:path_provider/path_provider.dart';
+
+import 'package:redpanda_light_client/export.dart';
 
 Service service;
 
@@ -44,6 +50,9 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  NodeId nodeId = new NodeId.withNewKeyPair();
+  print('NodeId: ' + nodeId.toString());
+
   await PrefService.init(prefix: 'pref_');
 
 //  Service.sentry.captureException(exception: new Exception("test message"));
@@ -64,7 +73,7 @@ Future<void> handleSignIn(setState) async {
     /**
      * try to login without user interaction
      */
-    googleSignInAccount = await googleSignIn.signInSilently();
+//    googleSignInAccount = await googleSignIn.signInSilently();
 
     if (googleSignInAccount == null) {
       // silent signin was not possible, show popup for login...
@@ -126,24 +135,30 @@ Future<void> handleSignIn(setState) async {
 
 //    await _googleSignIn.signOut();
   } catch (error) {
-    print("error singning in..." + error);
+    print("error singning in..." + error.toString());
   }
 }
 
 void runService() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String nodeIdString = prefs.getString('nodeIdString');
-  KademliaId kademliaId;
-  if (nodeIdString == null) {
-    kademliaId = new KademliaId();
-    var string = kademliaId.toString();
-    await prefs.setString('nodeIdString', string);
-  } else {
-    kademliaId = KademliaId.fromString(nodeIdString);
-  }
+//  SharedPreferences prefs = await SharedPreferences.getInstance();
+//  String nodeIdString = prefs.getString('nodeIdString');
+//  KademliaId kademliaId;
+//  if (nodeIdString == null) {
+//    kademliaId = new KademliaId();
+//    var string = kademliaId.toString();
+//    await prefs.setString('nodeIdString', string);
+//  } else {
+//    kademliaId = KademliaId.fromString(nodeIdString);
+//  }
+//
+//  service = new Service(kademliaId);
+//  service.start();
 
-  service = new Service(kademliaId);
-  service.start();
+  final dbFolder = await getApplicationDocumentsDirectory();
+
+  String dataFolderPath = dbFolder.path;
+
+  RedPandaLightClient.init(dataFolderPath);
 }
 
 class MyApp extends StatelessWidget {
@@ -306,36 +321,66 @@ class _MyHomePageState extends State<MyHomePage> {
 //          );
         }).build(context);
 
-    return Column(
-      // Center is a layout widget. It takes a single child and positions it
-      // in the middle of the parent.
-      // Column is also a layout widget. It takes a list of children and
-      // arranges them vertically. By default, it sizes itself to fit its
-      // children horizontally, and tries to be as tall as its parent.
-      //
-      // Invoke "debug painting" (press "p" in the console, choose the
-      // "Toggle Debug Paint" action from the Flutter Inspector in Android
-      // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-      // to see the wireframe for each widget.
-      //
-      // Column has various properties to control how it sizes itself and
-      // how it positions its children. Here we use mainAxisAlignment to
-      // center the children vertically; the main axis here is the vertical
-      // axis because Columns are vertical (the cross axis would be
-      // horizontal).
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Hello $name: $_counter',
-        ),
+    print('dggeer ' + ConnectionService.appDatabase.toString());
+
+    if (ConnectionService.appDatabase != null) {
+      Stream<List<Channel>> stream =
+          ConnectionService.appDatabase.watchChannelEntries();
+      print('channel stream: ' + stream.toString());
+
+      StreamBuilder<List<Channel>> streamBuilder = StreamBuilder(
+          stream: stream,
+          builder: (context, AsyncSnapshot<List<Channel>> snapshot) {
+            if (!snapshot.hasData) {
+              return Center(
+                child: CircularProgressIndicator(
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(Color.fromARGB(0, 0, 0, 1)),
+                ),
+              );
+            } else {
+              return ListView.builder(
+                padding: EdgeInsets.all(10.0),
+                itemBuilder: (context, index) =>
+                    makeCard2(context, snapshot, index),
+                itemCount: snapshot.data.length,
+              );
+            }
+          });
+
+      return streamBuilder;
+    } else {
+      return Column(
+        // Center is a layout widget. It takes a single child and positions it
+        // in the middle of the parent.
+        // Column is also a layout widget. It takes a list of children and
+        // arranges them vertically. By default, it sizes itself to fit its
+        // children horizontally, and tries to be as tall as its parent.
+        //
+        // Invoke "debug painting" (press "p" in the console, choose the
+        // "Toggle Debug Paint" action from the Flutter Inspector in Android
+        // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+        // to see the wireframe for each widget.
+        //
+        // Column has various properties to control how it sizes itself and
+        // how it positions its children. Here we use mainAxisAlignment to
+        // center the children vertically; the main axis here is the vertical
+        // axis because Columns are vertical (the cross axis would be
+        // horizontal).
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Hello $name: $_counter',
+          ),
 //          Text(
 //            '$_counter',
 //            style: Theme.of(context).textTheme.display1,
 //          ),
-        Expanded(child: listView)
-      ],
-    );
+          Expanded(child: listView)
+        ],
+      );
+    }
   }
 
   Widget makeCard(BuildContext context, int index) {
@@ -345,6 +390,20 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Container(
         decoration: BoxDecoration(color: Color.fromRGBO(65, 74, 95, .9)),
         child: makeListTile(index),
+      ),
+    );
+  }
+
+  Widget makeCard2(
+      BuildContext context, AsyncSnapshot<List<Channel>> snapshot, int index) {
+    print('snapshot len: ' + snapshot.data.length.toString());
+
+    return Card(
+      elevation: 1.0,
+      margin: new EdgeInsets.symmetric(horizontal: 5.0, vertical: 1.0),
+      child: Container(
+        decoration: BoxDecoration(color: Color.fromRGBO(65, 74, 95, .9)),
+        child: makeListTile2(snapshot, index),
       ),
     );
   }
@@ -393,6 +452,46 @@ class _MyHomePageState extends State<MyHomePage> {
             Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
   }
 
+  Widget makeListTile2(AsyncSnapshot<List<Channel>> snapshot, int index) {
+    return ListTile(
+        onLongPress: () {
+          chatLongPress2(snapshot, index);
+        },
+        onTap: () {
+          chatOnTap(index);
+        },
+        contentPadding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+        leading: Container(
+          padding: EdgeInsets.only(right: 12.0),
+          decoration: new BoxDecoration(
+              border: new Border(
+                  right: new BorderSide(width: 1.0, color: Colors.white24))),
+          child: Icon(
+            Icons.account_circle,
+            color: Colors.white,
+            size: 55,
+          ),
+        ),
+        title: Text(
+          snapshot.data[index].title,
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
+
+        subtitle: Row(
+          children: <Widget>[
+//            Icon(Icons.vpn_key, color: Colors.yellowAccent),
+            Text(
+                snapshot.data[index].lastMessage_user +
+                    ": " +
+                    snapshot.data[index].lastMessage_text,
+                style: TextStyle(color: Colors.white))
+          ],
+        ),
+        trailing:
+            Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
+  }
+
   void chatLongPress(int index) {
     showDialog(
       context: context,
@@ -403,6 +502,36 @@ class _MyHomePageState extends State<MyHomePage> {
           content: new Text("Du hast auf nummer $index LAANGE geklickt!"),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text("Close"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void chatLongPress2(AsyncSnapshot<List<Channel>> snapshot, int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Clicked!"),
+          content: new Text("Du hast auf nummer $index LAANGE geklickt!"),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text("remove"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                ConnectionService.appDatabase
+                    .removeChannel(snapshot.data[index].id);
+              },
+            ),
             new FlatButton(
               child: new Text("Close"),
               onPressed: () {
