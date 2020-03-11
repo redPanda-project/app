@@ -3,3 +3,4 @@
 redPanda p2p chat app.
 The Flutter app is at the beginning of its development, the server application will be reworked prior the flutter app will work.
 
+Todo list can be found here: [Dev Plans](https://github.com/redPanda-project/app/projects/1)
