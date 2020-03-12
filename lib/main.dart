@@ -320,18 +320,18 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget makeBody(BuildContext context) {
-    var listView = ListView.builder(
-        scrollDirection: Axis.vertical,
-        padding: const EdgeInsets.all(0),
-        itemCount: service?.peerlist?.length ?? 0,
-        itemBuilder: (BuildContext context, int index) {
-          return makeCard(context, index);
-//          return Container(
-//            height: 50,
-//            color: Colors.amber[colorCodes[index]],
-//            child: Center(child: Text('Entry ${entries[index]}')),
-//          );
-        }).build(context);
+//    var listView = ListView.builder(
+//        scrollDirection: Axis.vertical,
+//        padding: const EdgeInsets.all(0),
+//        itemCount: service?.peerlist?.length ?? 0,
+//        itemBuilder: (BuildContext context, int index) {
+//          return makeCard(context, index);
+////          return Container(
+////            height: 50,
+////            color: Colors.amber[colorCodes[index]],
+////            child: Center(child: Text('Entry ${entries[index]}')),
+////          );
+//        }).build(context);
 
     print('dggeer ' + ConnectionService.appDatabase.toString());
 
@@ -406,16 +406,16 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Widget makeCard(BuildContext context, int index) {
-    return Card(
-      elevation: 1.0,
-      margin: new EdgeInsets.symmetric(horizontal: 5.0, vertical: 1.0),
-      child: Container(
-        decoration: BoxDecoration(color: Color.fromRGBO(65, 74, 95, .9)),
-        child: makeListTile(index),
-      ),
-    );
-  }
+//  Widget makeCard(BuildContext context, int index) {
+//    return Card(
+//      elevation: 1.0,
+//      margin: new EdgeInsets.symmetric(horizontal: 5.0, vertical: 1.0),
+//      child: Container(
+//        decoration: BoxDecoration(color: Color.fromRGBO(65, 74, 95, .9)),
+//        child: makeListTile(index),
+//      ),
+//    );
+//  }
 
   Widget makeCard2(
       BuildContext context, AsyncSnapshot<List<Channel>> snapshot, int index) {
@@ -431,49 +431,49 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget makeListTile(int index) {
-    return ListTile(
-        onLongPress: () {
-          chatLongPress(index);
-        },
-        onTap: () {
-          chatOnTap(index);
-        },
-        contentPadding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-        leading: Container(
-          padding: EdgeInsets.only(right: 12.0),
-          decoration: new BoxDecoration(
-              border: new Border(
-                  right: new BorderSide(width: 1.0, color: Colors.white24))),
-          child: Icon(
-            Icons.account_circle,
-            color: Colors.white,
-            size: 55,
-          ),
-        ),
-        title: Text(
-//          "Friend $index/$_counter " + service?.peerlist[0].ip ?? "no ip",
-          "" +
-              (service?.peerlist[index].ip ?? "no ip ") +
-              " " +
-              (service?.peerlist[index].connecting.toString() ?? "no ip") +
-              " $index/$_counter",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
-
-        subtitle: Row(
-          children: <Widget>[
-            Icon(Icons.vpn_key, color: Colors.yellowAccent),
-            Text(
-                "Connected: " +
-                    (service?.peerlist[index].connecting.toString() ?? "no"),
-                style: TextStyle(color: Colors.white))
-          ],
-        ),
-        trailing:
-            Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
-  }
+//  Widget makeListTile(int index) {
+//    return ListTile(
+//        onLongPress: () {
+//          chatLongPress(index);
+//        },
+//        onTap: () {
+//          chatOnTap(index);
+//        },
+//        contentPadding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+//        leading: Container(
+//          padding: EdgeInsets.only(right: 12.0),
+//          decoration: new BoxDecoration(
+//              border: new Border(
+//                  right: new BorderSide(width: 1.0, color: Colors.white24))),
+//          child: Icon(
+//            Icons.account_circle,
+//            color: Colors.white,
+//            size: 55,
+//          ),
+//        ),
+//        title: Text(
+////          "Friend $index/$_counter " + service?.peerlist[0].ip ?? "no ip",
+//          "" +
+//              (service?.peerlist[index].ip ?? "no ip ") +
+//              " " +
+//              (service?.peerlist[index].connecting.toString() ?? "no ip") +
+//              " $index/$_counter",
+//          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+//        ),
+//        // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
+//
+//        subtitle: Row(
+//          children: <Widget>[
+//            Icon(Icons.vpn_key, color: Colors.yellowAccent),
+//            Text(
+//                "Connected: " +
+//                    (service?.peerlist[index].connecting.toString() ?? "no"),
+//                style: TextStyle(color: Colors.white))
+//          ],
+//        ),
+//        trailing:
+//            Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
+//  }
 
   Widget makeListTile2(AsyncSnapshot<List<Channel>> snapshot, int index) {
     return ListTile(
