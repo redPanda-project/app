@@ -568,11 +568,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void chatOnTap(AsyncSnapshot<List<Channel>> snapshot, int index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        ConnectionService.appDatabase.removeChannel(snapshot.data[index].id);
-        // return object of type Dialog
+    ConnectionService.appDatabase.removeChannel(snapshot.data[index].id);
+//    showDialog(
+//      context: context,
+//      builder: (BuildContext context) {
 //        return AlertDialog(
 //          title: new Text("Clicked!"),
 //          content: new Text("Du hast auf nummer $index getappt!!"),
@@ -586,7 +585,7 @@ class _MyHomePageState extends State<MyHomePage> {
 //            ),
 //          ],
 //        );
-      },
-    );
+//      },
+//    );
   }
 }
