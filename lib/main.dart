@@ -237,7 +237,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (ConnectionService.appDatabase != null) {
       print('test insert new channel');
       ChannelsCompanion channelsCompanion = ChannelsCompanion.insert(
-          title: "Title" + new Random().nextInt(100).toString(),
+          name: "Name " + new Random().nextInt(100).toString(),
           lastMessage_text: "what's up?",
           lastMessage_user: "james");
       ConnectionService.appDatabase.insertChannel(channelsCompanion);
@@ -496,7 +496,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         title: Text(
-          snapshot.data[index].title,
+          snapshot.data[index].name,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
@@ -538,15 +538,38 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void chatLongPress2(AsyncSnapshot<List<Channel>> snapshot, int index) {
+    String textValue = null;
+
+    TextField textField = TextField(
+      decoration: InputDecoration(
+          hintText: 'new name for ${snapshot.data[index].name}'),
+      onChanged: (String value) async {
+        textValue = value;
+      },
+    );
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         // return object of type Dialog
         return AlertDialog(
-          title: new Text("Clicked!"),
-          content: new Text("Du hast auf nummer $index LAANGE geklickt!"),
+          title: new Text("Settings [${snapshot.data[index].name}]"),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Change name for Channel:'),
+                textField,
+              ],
+            ),
+          ),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text("cancle"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
             new FlatButton(
               child: new Text("remove"),
               onPressed: () {
@@ -556,9 +579,14 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
             new FlatButton(
-              child: new Text("Close"),
+              child: new Text("ok"),
               onPressed: () {
                 Navigator.of(context).pop();
+
+                if (textValue != null) {
+                  ConnectionService.appDatabase
+                      .renameChannel(snapshot.data[index].id, textValue);
+                }
               },
             ),
           ],
