@@ -37,9 +37,6 @@ String name = "unknown";
 FirebaseUser user;
 
 void main() async {
-
-
-
   // This captures errors reported by the Flutter framework.
   FlutterError.onError = (FlutterErrorDetails details) {
     if (Service.isInDebugMode) {
@@ -71,7 +68,6 @@ void main() async {
     // Dart errors to the dev console or Sentry depending on the environment.
     Service.reportError(error, stackTrace);
   });
-
 }
 
 Future<void> handleSignIn(setState) async {
@@ -485,7 +481,7 @@ class _MyHomePageState extends State<MyHomePage> {
           chatLongPress2(snapshot, index);
         },
         onTap: () {
-          chatOnTap(index);
+          chatOnTap(snapshot, index);
         },
         contentPadding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
         leading: Container(
@@ -571,24 +567,25 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void chatOnTap(int index) {
+  void chatOnTap(AsyncSnapshot<List<Channel>> snapshot, int index) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        ConnectionService.appDatabase.removeChannel(snapshot.data[index].id);
         // return object of type Dialog
-        return AlertDialog(
-          title: new Text("Clicked!"),
-          content: new Text("Du hast auf nummer $index getappt!!"),
-          actions: <Widget>[
-            // usually buttons at the bottom of the dialog
-            new FlatButton(
-              child: new Text("Close"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
+//        return AlertDialog(
+//          title: new Text("Clicked!"),
+//          content: new Text("Du hast auf nummer $index getappt!!"),
+//          actions: <Widget>[
+//            // usually buttons at the bottom of the dialog
+//            new FlatButton(
+//              child: new Text("Close"),
+//              onPressed: () {
+//                Navigator.of(context).pop();
+//              },
+//            ),
+//          ],
+//        );
       },
     );
   }
