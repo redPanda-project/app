@@ -37,6 +37,9 @@ String name = "unknown";
 FirebaseUser user;
 
 void main() async {
+
+
+
   // This captures errors reported by the Flutter framework.
   FlutterError.onError = (FlutterErrorDetails details) {
     if (Service.isInDebugMode) {
@@ -50,6 +53,8 @@ void main() async {
   };
 
   WidgetsFlutterBinding.ensureInitialized();
+
+  await runService();
 
 //  NodeId nodeId = new NodeId.withNewKeyPair();
 //  print('NodeId: ' + nodeId.toString());
@@ -66,7 +71,7 @@ void main() async {
     // Dart errors to the dev console or Sentry depending on the environment.
     Service.reportError(error, stackTrace);
   });
-  runService();
+
 }
 
 Future<void> handleSignIn(setState) async {
@@ -140,7 +145,7 @@ Future<void> handleSignIn(setState) async {
   }
 }
 
-void runService() async {
+Future<void> runService() async {
 //  SharedPreferences prefs = await SharedPreferences.getInstance();
 //  String nodeIdString = prefs.getString('nodeIdString');
 //  KademliaId kademliaId;
@@ -159,7 +164,7 @@ void runService() async {
 
   String dataFolderPath = dbFolder.path;
 
-  RedPandaLightClient.init(dataFolderPath);
+  await RedPandaLightClient.init(dataFolderPath);
 }
 
 class MyApp extends StatelessWidget {
@@ -233,12 +238,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
     }
 
-    print('test insert new channel');
-    ChannelsCompanion channelsCompanion = ChannelsCompanion.insert(
-        title: "Title" + new Random().nextInt(100).toString(),
-        lastMessage_text: "what's up?",
-        lastMessage_user: "james");
-    ConnectionService.appDatabase.insertChannel(channelsCompanion);
+    if (ConnectionService.appDatabase != null) {
+      print('test insert new channel');
+      ChannelsCompanion channelsCompanion = ChannelsCompanion.insert(
+          title: "Title" + new Random().nextInt(100).toString(),
+          lastMessage_text: "what's up?",
+          lastMessage_user: "james");
+      ConnectionService.appDatabase.insertChannel(channelsCompanion);
+    }
 
 //    setState(() {
 //      // This call to setState tells the Flutter framework that something has
@@ -332,6 +339,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
     print('dggeer ' + ConnectionService.appDatabase.toString());
 
+    /**
+     * ConnectionService.appDatabase may be null in test cases where the
+     * redpanda light client library was not initialized.
+     * In this case we just display a waiting spinner.
+     */
     if (ConnectionService.appDatabase != null) {
       Stream<List<Channel>> stream =
           ConnectionService.appDatabase.watchChannelEntries();

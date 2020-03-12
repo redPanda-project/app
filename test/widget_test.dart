@@ -1,30 +1,30 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility that Flutter provides. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:redpanda/main.dart';
+import 'package:redpanda_light_client/export.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('Test Channels from DB present', (WidgetTester tester) async {
+
+    //path framework not available on linux or windows, use default test folder
+    // this is ./test/ db file will be created there from the lib
+    Directory current = Directory.current;
+    print(current.path);
+    String dataFolderPath = "";
+    await RedPandaLightClient.init(dataFolderPath);
+
     await tester.pumpWidget(MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+//    await tester.pumpAndSettle(const Duration(seconds: 1));
+    //frame trigger necessary for db to display data
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsNothing);
+    expect(find.byIcon(Icons.account_circle), findsWidgets);
+
+
+    await RedPandaLightClient.shutdown();
   });
 }
