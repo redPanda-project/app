@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
@@ -50,10 +51,10 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  NodeId nodeId = new NodeId.withNewKeyPair();
-  print('NodeId: ' + nodeId.toString());
+//  NodeId nodeId = new NodeId.withNewKeyPair();
+//  print('NodeId: ' + nodeId.toString());
 
-  await PrefService.init(prefix: 'pref_');
+  PrefService.init(prefix: 'pref_');
 
 //  Service.sentry.captureException(exception: new Exception("test message"));
 
@@ -209,7 +210,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
-    handleSignIn(setState);
+//    handleSignIn(setState);
     Utils.states.add(setState);
   }
 
@@ -228,8 +229,16 @@ class _MyHomePageState extends State<MyHomePage> {
 //          await tx.set(postRef, <String, dynamic>{'likesCount': 0});
 //        }
 //      });
-      _incrementCounterGlobal();
+//      _incrementCounterGlobal();
+
     }
+
+    print('test insert new channel');
+    ChannelsCompanion channelsCompanion = ChannelsCompanion.insert(
+        title: "Title" + new Random().nextInt(100).toString(),
+        lastMessage_text: "what's up?",
+        lastMessage_user: "james");
+    ConnectionService.appDatabase.insertChannel(channelsCompanion);
 
 //    setState(() {
 //      // This call to setState tells the Flutter framework that something has
@@ -334,8 +343,8 @@ class _MyHomePageState extends State<MyHomePage> {
             if (!snapshot.hasData) {
               return Center(
                 child: CircularProgressIndicator(
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(Color.fromARGB(0, 0, 0, 1)),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      Color.fromRGBO(57, 68, 87, 1.0)),
                 ),
               );
             } else {
@@ -350,36 +359,42 @@ class _MyHomePageState extends State<MyHomePage> {
 
       return streamBuilder;
     } else {
-      return Column(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        // Column is also a layout widget. It takes a list of children and
-        // arranges them vertically. By default, it sizes itself to fit its
-        // children horizontally, and tries to be as tall as its parent.
-        //
-        // Invoke "debug painting" (press "p" in the console, choose the
-        // "Toggle Debug Paint" action from the Flutter Inspector in Android
-        // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-        // to see the wireframe for each widget.
-        //
-        // Column has various properties to control how it sizes itself and
-        // how it positions its children. Here we use mainAxisAlignment to
-        // center the children vertically; the main axis here is the vertical
-        // axis because Columns are vertical (the cross axis would be
-        // horizontal).
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Hello $name: $_counter',
-          ),
-//          Text(
-//            '$_counter',
-//            style: Theme.of(context).textTheme.display1,
-//          ),
-          Expanded(child: listView)
-        ],
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(1, 1, 1, 1)),
+        ),
       );
+
+//      return Column(
+//        // Center is a layout widget. It takes a single child and positions it
+//        // in the middle of the parent.
+//        // Column is also a layout widget. It takes a list of children and
+//        // arranges them vertically. By default, it sizes itself to fit its
+//        // children horizontally, and tries to be as tall as its parent.
+//        //
+//        // Invoke "debug painting" (press "p" in the console, choose the
+//        // "Toggle Debug Paint" action from the Flutter Inspector in Android
+//        // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+//        // to see the wireframe for each widget.
+//        //
+//        // Column has various properties to control how it sizes itself and
+//        // how it positions its children. Here we use mainAxisAlignment to
+//        // center the children vertically; the main axis here is the vertical
+//        // axis because Columns are vertical (the cross axis would be
+//        // horizontal).
+//        mainAxisAlignment: MainAxisAlignment.start,
+//        crossAxisAlignment: CrossAxisAlignment.start,
+//        children: <Widget>[
+//          Text(
+//            'Hello $name: $_counter',
+//          ),
+////          Text(
+////            '$_counter',
+////            style: Theme.of(context).textTheme.display1,
+////          ),
+//          Expanded(child: listView)
+//        ],
+//      );
     }
   }
 
