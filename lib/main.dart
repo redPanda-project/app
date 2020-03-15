@@ -8,6 +8,7 @@ import 'package:preferences/preference_service.dart';
 import 'package:redpanda/activities/preferences.dart';
 import 'package:redpanda/redPanda/KademliaId.dart';
 import 'package:redpanda/redPanda/Peer.dart';
+import 'package:redpanda/redPanda/Settings.dart';
 import 'package:redpanda/redPanda/Utils.dart';
 import 'package:redpanda/service.dart';
 
@@ -343,7 +344,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (ConnectionService.appDatabase != null) {
       Stream<List<Channel>> stream =
           ConnectionService.appDatabase.watchChannelEntries();
-      print('channel stream: ' + stream.toString());
+//      print('channel stream: ' + stream.toString());
 
       StreamBuilder<List<Channel>> streamBuilder = StreamBuilder(
           stream: stream,

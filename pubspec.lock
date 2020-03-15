@@ -366,7 +366,7 @@ packages:
     description:
       path: "."
       ref: dev
-      resolved-ref: dcc432d73e6c34c51db3d90c81d9077b63d998bc
+      resolved-ref: "945b63e8b4d83a064f2c893509c405e886d2c4dc"
       url: "https://github.com/redPanda-project/redpanda_light_client.git"
     source: git
     version: "0.0.1"
