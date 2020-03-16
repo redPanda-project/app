@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -24,6 +25,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:redpanda_light_client/export.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 Service service;
 
 int _counter = 0;
@@ -36,6 +39,30 @@ GoogleSignInAccount googleSignInAccount;
 String name = "unknown";
 
 FirebaseUser user;
+
+final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+bool _isConfigured = false;
+
+Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
+  if (message.containsKey('data')) {
+    // Handle data message
+    final dynamic data = message['data'];
+  }
+
+  if (message.containsKey('notification')) {
+    // Handle notification message
+    final dynamic notification = message['notification'];
+  }
+
+  print('obtained background message ${message}');
+
+  runService();
+
+  const oneSec = const Duration(seconds: 3);
+  new Timer(oneSec, () => RedPandaLightClient.shutdown());
+
+  // Or do other work.
+}
 
 void main() async {
   // This captures errors reported by the Flutter framework.
@@ -143,7 +170,26 @@ Future<void> handleSignIn(setState) async {
 }
 
 Future<void> runService() async {
-//  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+//  SharedPreferences.setMockInitialValues({}); // set initial values here if desired
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  String dataFolderPath = prefs.getString("dbFolderPath");
+
+//  print('obtained path from prefs: $dataFolderPath');
+
+  if (prefs.getString("dbFolderPath") == null) {
+    final dbFolder = await getApplicationDocumentsDirectory();
+    dataFolderPath = dbFolder.path;
+    prefs.setString("dbFolderPath", dataFolderPath);
+  }
+
+//  String dataFolderPath = "/data/user/0/im.redpanda/app_flutter";
+
+//  String dataFolderPath = Directory.current.path;
+//  print("path: " + dataFolderPath);
+
 //  String nodeIdString = prefs.getString('nodeIdString');
 //  KademliaId kademliaId;
 //  if (nodeIdString == null) {
@@ -156,10 +202,6 @@ Future<void> runService() async {
 //
 //  service = new Service(kademliaId);
 //  service.start();
-
-  final dbFolder = await getApplicationDocumentsDirectory();
-
-  String dataFolderPath = dbFolder.path;
 
   await RedPandaLightClient.init(dataFolderPath);
 }
@@ -213,6 +255,32 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
 //    handleSignIn(setState);
+
+    if (!_isConfigured) {
+      _firebaseMessaging.requestNotificationPermissions();
+
+      _firebaseMessaging
+          .getToken()
+          .then((token) => {print('token: ' + token.toString())});
+
+      _firebaseMessaging.configure(
+        onMessage: (Map<String, dynamic> message) async {
+          print("onMessage: $message");
+//      _showItemDialog(message);
+        },
+        onBackgroundMessage: myBackgroundMessageHandler,
+        onLaunch: (Map<String, dynamic> message) async {
+          print("onLaunch: $message");
+//      _navigateToItemDetail(message);
+        },
+        onResume: (Map<String, dynamic> message) async {
+          print("onResume: $message");
+//      _navigateToItemDetail(message);
+        },
+      );
+      _isConfigured = true;
+    }
+
     Utils.states.add(setState);
   }
 

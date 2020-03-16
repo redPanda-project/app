@@ -171,6 +171,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.1+2"
+  firebase_messaging:
+    dependency: "direct main"
+    description:
+      name: firebase_messaging
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "6.0.12"
   flat_buffers:
     dependency: transitive
     description:
@@ -364,11 +371,9 @@ packages:
   redpanda_light_client:
     dependency: "direct main"
     description:
-      path: "."
-      ref: dev
-      resolved-ref: "945b63e8b4d83a064f2c893509c405e886d2c4dc"
-      url: "https://github.com/redPanda-project/redpanda_light_client.git"
-    source: git
+      path: "..\\redpanda_light_client"
+      relative: true
+    source: path
     version: "0.0.1"
   sentry:
     dependency: "direct main"
