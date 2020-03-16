@@ -40,6 +40,8 @@ String name = "unknown";
 
 FirebaseUser user;
 
+AppLifecycleState _lastLifecycleState;
+
 final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 bool _isConfigured = false;
 
@@ -170,12 +172,17 @@ Future<void> handleSignIn(setState) async {
 }
 
 Future<void> runService() async {
-
 //  SharedPreferences.setMockInitialValues({}); // set initial values here if desired
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
   String dataFolderPath = prefs.getString("dbFolderPath");
+
+  int port = prefs.getInt("myPort");
+  if (port == null) {
+    port = Utils.random.nextInt(300) + 5200;
+    await prefs.setInt("myPort", port);
+  }
 
 //  print('obtained path from prefs: $dataFolderPath');
 
@@ -203,7 +210,7 @@ Future<void> runService() async {
 //  service = new Service(kademliaId);
 //  service.start();
 
-  await RedPandaLightClient.init(dataFolderPath);
+  await RedPandaLightClient.init(dataFolderPath, port);
 }
 
 class MyApp extends StatelessWidget {
@@ -251,10 +258,14 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    implements WidgetsBindingObserver {
   @override
   void initState() {
 //    handleSignIn(setState);
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     if (!_isConfigured) {
       _firebaseMessaging.requestNotificationPermissions();
@@ -684,5 +695,67 @@ class _MyHomePageState extends State<MyHomePage> {
 //        );
 //      },
 //    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    // TODO: implement didChangeAccessibilityFeatures
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive) {
+      RedPandaLightClient.shutdown();
+    } else if (state == AppLifecycleState.resumed) {
+      runService();
+    }
+
+    print('new app state: ' + state.toString());
+//    setState(() {
+      _lastLifecycleState = state;
+//    });
+  }
+
+  @override
+  void didChangeLocales(List<Locale> locale) {
+    // TODO: implement didChangeLocales
+  }
+
+  @override
+  void didChangeMetrics() {
+    // TODO: implement didChangeMetrics
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    // TODO: implement didChangePlatformBrightness
+  }
+
+  @override
+  void didChangeTextScaleFactor() {
+    // TODO: implement didChangeTextScaleFactor
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    // TODO: implement didHaveMemoryPressure
+  }
+
+  @override
+  Future<bool> didPopRoute() {
+    // TODO: implement didPopRoute
+    return null;
+  }
+
+  @override
+  Future<bool> didPushRoute(String route) {
+    // TODO: implement didPushRoute
+    return null;
   }
 }

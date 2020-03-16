@@ -44,10 +44,10 @@ dependencies:
   firebase_auth: ^0.15.5+2
   sentry: ">=3.0.0 <4.0.0"
   redpanda_light_client:
-#    git:
-#      url: https://github.com/redPanda-project/redpanda_light_client.git
-#      ref: dev #using dev branch
-    path: ../redpanda_light_client
+    git:
+      url: https://github.com/redPanda-project/redpanda_light_client.git
+      ref: dev #using dev branch
+#    path: ../redpanda_light_client
   path_provider: ^1.6.5
   firebase_messaging: ^6.0.12
 
