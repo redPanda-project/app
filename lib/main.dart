@@ -718,7 +718,7 @@ class _MyHomePageState extends State<MyHomePage>
 
     print('new app state: ' + state.toString());
 //    setState(() {
-      _lastLifecycleState = state;
+    _lastLifecycleState = state;
 //    });
   }
 
@@ -749,13 +749,11 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Future<bool> didPopRoute() {
-    // TODO: implement didPopRoute
-    return null;
+    return Future<bool>.value(false);
   }
 
   @override
   Future<bool> didPushRoute(String route) {
-    // TODO: implement didPushRoute
-    return null;
+    return Future<bool>.value(false);
   }
 }

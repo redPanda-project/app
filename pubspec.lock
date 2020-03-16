@@ -156,7 +156,7 @@ packages:
       name: firebase_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.4+2"
+    version: "0.4.4+3"
   firebase_core_platform_interface:
     dependency: transitive
     description:
@@ -184,7 +184,7 @@ packages:
       name: flat_buffers
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.11.0"
+    version: "1.12.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -220,14 +220,14 @@ packages:
       name: google_sign_in_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.4"
+    version: "1.1.0"
   google_sign_in_web:
     dependency: transitive
     description:
       name: google_sign_in_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.3+2"
+    version: "0.8.4"
   hex:
     dependency: "direct main"
     description:
@@ -373,7 +373,7 @@ packages:
     description:
       path: "."
       ref: dev
-      resolved-ref: "945b63e8b4d83a064f2c893509c405e886d2c4dc"
+      resolved-ref: "1887bd54e6247e3f3e4ed372cae9c0482b759fea"
       url: "https://github.com/redPanda-project/redpanda_light_client.git"
     source: git
     version: "0.0.1"

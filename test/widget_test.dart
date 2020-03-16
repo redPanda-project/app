@@ -8,13 +8,12 @@ import 'package:redpanda_light_client/export.dart';
 
 void main() {
   testWidgets('Test Channels from DB present', (WidgetTester tester) async {
-
     //path framework not available on linux or windows, use default test folder
     // this is ./test/ db file will be created there from the lib
     Directory current = Directory.current;
     print(current.path);
     String dataFolderPath = "";
-    await RedPandaLightClient.init(dataFolderPath);
+    await RedPandaLightClient.init(dataFolderPath, 5002);
 
     await tester.pumpWidget(MyApp());
 
@@ -23,7 +22,6 @@ void main() {
     await tester.pump();
 
     expect(find.byIcon(Icons.account_circle), findsWidgets);
-
 
     await RedPandaLightClient.shutdown();
   });
