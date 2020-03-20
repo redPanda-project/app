@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:preferences/preferences.dart';
-
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:preferences/preferences.dart';
 
 class Preferences extends StatelessWidget {
   GoogleSignIn googleSignIn;
@@ -17,6 +16,15 @@ class Preferences extends StatelessWidget {
       ),
       body: PreferencePage([
         PreferenceTitle('General'),
+        TextFieldPreference(
+          'Nickname',
+          'nickname',
+          defaultVal: 'unknown',
+          onChange: (text) {
+            //todo appDatabase
+//            ConnectionService.appDatabase.setNickname(text);
+          },
+        ),
         DropdownPreference(
           'Start Page',
           'start_page',

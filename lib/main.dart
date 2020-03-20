@@ -1,21 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:preferences/preference_service.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:redpanda/activities/preferences.dart';
-import 'package:redpanda/redPanda/KademliaId.dart';
-import 'package:redpanda/redPanda/Peer.dart';
-import 'package:redpanda/redPanda/Settings.dart';
-import 'package:redpanda/redPanda/Utils.dart';
 import 'package:redpanda/service.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:redpanda_light_client/src/main/ConnectionService.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,8 +25,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:redpanda_light_client/export.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:workmanager/workmanager.dart';
 
-Service service;
+bool serviceCompletelyStarted = false;
+
+Function mySetState;
 
 int _counter = 0;
 
@@ -39,8 +41,11 @@ GoogleSignInAccount googleSignInAccount;
 String name = "unknown";
 
 FirebaseUser user;
+String myNick = "unknown";
 
 AppLifecycleState _lastLifecycleState;
+
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 bool _isConfigured = false;
@@ -49,6 +54,22 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
   if (message.containsKey('data')) {
     // Handle data message
     final dynamic data = message['data'];
+
+    // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+    var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+    var initializationSettingsIOS = IOSInitializationSettings();
+    var initializationSettings = InitializationSettings(initializationSettingsAndroid, initializationSettingsIOS);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
+
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'your channel id', 'your channel name', 'your channel description',
+        importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    flutterLocalNotificationsPlugin.show(0, 'New Message', 'unknown ${data['data']}', platformChannelSpecifics,
+        payload: 'item x');
+    print(data.runtimeType);
+    print(data);
   }
 
   if (message.containsKey('notification')) {
@@ -64,6 +85,30 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
   new Timer(oneSec, () => RedPandaLightClient.shutdown());
 
   // Or do other work.
+
+  return Future<void>.value();
+}
+
+void callbackDispatcher() {
+  Workmanager.executeTask((task, inputData) async {
+    print("Native called background task: $task"); //simpleTask will be emitted here.
+//
+//    runService();
+//
+////    const oneSec = const Duration(seconds: 3);
+////    new Timer(oneSec, () => RedPandaLightClient.shutdown());
+//
+//
+
+    print("from worker22!");
+//    return new Future.delayed(const Duration(seconds: 1), shutdownNow);
+    return;
+  });
+}
+
+bool shutdownNow() {
+//  RedPandaLightClient.shutdown();
+  return true;
 }
 
 void main() async {
@@ -81,7 +126,34 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  await flutterLocalNotificationsPlugin.cancelAll();
+
+  await Workmanager.initialize(callbackDispatcher,
+      // The top level function, aka callbackDispatcher
+      isInDebugMode:
+          true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+      );
+//  await Workmanager.cancelAll();
+  await Workmanager.registerPeriodicTask("1", "task1",
+//      constraints: Constraints(
+//          networkType: NetworkType.connected,
+//          requiresBatteryNotLow: true,
+//          requiresCharging: false,
+//          requiresDeviceIdle: false,
+//          requiresStorageNotLow: true),
+      existingWorkPolicy: ExistingWorkPolicy.replace,
+      frequency: Duration(minutes: 15));
+
   await runService();
+
+  if (mySetState != null) {
+    mySetState(() {
+      serviceCompletelyStarted = true;
+      print("serviceCompletelyStarted: " + serviceCompletelyStarted.toString());
+    });
+  } else {
+    serviceCompletelyStarted = true;
+  }
 
 //  NodeId nodeId = new NodeId.withNewKeyPair();
 //  print('NodeId: ' + nodeId.toString());
@@ -116,8 +188,7 @@ Future<void> handleSignIn(setState) async {
       name = googleSignInAccount.displayName;
     });
 
-    final GoogleSignInAuthentication googleAuth =
-        await googleSignInAccount.authentication;
+    final GoogleSignInAuthentication googleAuth = await googleSignInAccount.authentication;
 
     final AuthCredential credential = GoogleAuthProvider.getCredential(
       accessToken: googleAuth.accessToken,
@@ -139,8 +210,7 @@ Future<void> handleSignIn(setState) async {
 //      }
 //    });
 
-    final DocumentReference postRef =
-        Firestore.instance.collection('users').document(user.uid);
+    final DocumentReference postRef = Firestore.instance.collection('users').document(user.uid);
     Firestore.instance.runTransaction((Transaction tx) async {
       DocumentSnapshot postSnapshot = await tx.get(postRef);
       if (postSnapshot.exists) {
@@ -175,6 +245,8 @@ Future<void> runService() async {
 //  SharedPreferences.setMockInitialValues({}); // set initial values here if desired
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  myNick = prefs.getString("pref_nickname");
 
   String dataFolderPath = prefs.getString("dbFolderPath");
 
@@ -258,21 +330,26 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
-    implements WidgetsBindingObserver {
+Future<void> onSelectNotification(String s) {}
+
+class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserver {
   @override
   void initState() {
 //    handleSignIn(setState);
     super.initState();
+
+    mySetState = setState;
 
     WidgetsBinding.instance.addObserver(this);
 
     if (!_isConfigured) {
       _firebaseMessaging.requestNotificationPermissions();
 
-      _firebaseMessaging
-          .getToken()
-          .then((token) => {print('token: ' + token.toString())});
+      _firebaseMessaging.getToken().then((token) {
+        print('token: ' + token.toString());
+        //todo appDatabase
+//        ConnectionService.appDatabase.insertFCMToken(token);
+      });
 
       _firebaseMessaging.configure(
         onMessage: (Map<String, dynamic> message) async {
@@ -291,8 +368,6 @@ class _MyHomePageState extends State<MyHomePage>
       );
       _isConfigured = true;
     }
-
-    Utils.states.add(setState);
   }
 
   void _incrementCounter() {
@@ -314,13 +389,9 @@ class _MyHomePageState extends State<MyHomePage>
 
     }
 
-    if (ConnectionService.appDatabase != null) {
-      print('test insert new channel');
-      ChannelsCompanion channelsCompanion = ChannelsCompanion.insert(
-          name: "Name " + new Random().nextInt(100).toString(),
-          lastMessage_text: "what's up?",
-          lastMessage_user: "james");
-      ConnectionService.appDatabase.insertChannel(channelsCompanion);
+    print('test insert new channel');
+    for (int i = 0; i < 20; i++) {
+      RedPandaLightClient.createNewChannel("Name " + i.toString() + " " + new Random().nextInt(100).toString());
     }
 
 //    setState(() {
@@ -334,16 +405,14 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void _incrementCounterGlobal() {
-    final DocumentReference postRef =
-        Firestore.instance.collection('global').document('counter');
+    final DocumentReference postRef = Firestore.instance.collection('global').document('counter');
     Firestore.instance.runTransaction((Transaction tx) async {
       DocumentSnapshot postSnapshot = await tx.get(postRef);
       if (postSnapshot.exists) {
 //        setState(() {
 //          _counter = postSnapshot.data['counter'] + 1;
 //        });
-        await tx.update(postRef,
-            <String, dynamic>{'counter': postSnapshot.data['counter'] + 1});
+        await tx.update(postRef, <String, dynamic>{'counter': postSnapshot.data['counter'] + 1});
       } else {
         await tx.set(postRef, <String, dynamic>{'counter': 0});
       }
@@ -382,8 +451,7 @@ class _MyHomePageState extends State<MyHomePage>
                   fontSize: 16.0),
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => Preferences(googleSignIn)),
+                MaterialPageRoute(builder: (context) => Preferences(googleSignIn)),
               )
             },
             padding: EdgeInsets.only(right: 30),
@@ -413,33 +481,25 @@ class _MyHomePageState extends State<MyHomePage>
 ////          );
 //        }).build(context);
 
-    print('dggeer ' + ConnectionService.appDatabase.toString());
-
     /**
      * ConnectionService.appDatabase may be null in test cases where the
      * redpanda light client library was not initialized.
      * In this case we just display a waiting spinner.
      */
-    if (ConnectionService.appDatabase != null) {
-      Stream<List<Channel>> stream =
-          ConnectionService.appDatabase.watchChannelEntries();
-//      print('channel stream: ' + stream.toString());
-
-      StreamBuilder<List<Channel>> streamBuilder = StreamBuilder(
-          stream: stream,
-          builder: (context, AsyncSnapshot<List<Channel>> snapshot) {
+    if (serviceCompletelyStarted) {
+      StreamBuilder<List<DBChannel>> streamBuilder = StreamBuilder(
+          stream: RedPandaLightClient.watchDBChannelEntries(),
+          builder: (context, AsyncSnapshot<List<DBChannel>> snapshot) {
             if (!snapshot.hasData) {
               return Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                      Color.fromRGBO(57, 68, 87, 1.0)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(57, 68, 87, 1.0)),
                 ),
               );
             } else {
               return ListView.builder(
                 padding: EdgeInsets.all(10.0),
-                itemBuilder: (context, index) =>
-                    makeCard2(context, snapshot, index),
+                itemBuilder: (context, index) => makeCard2(context, snapshot, index),
                 itemCount: snapshot.data.length,
               );
             }
@@ -497,8 +557,7 @@ class _MyHomePageState extends State<MyHomePage>
 //    );
 //  }
 
-  Widget makeCard2(
-      BuildContext context, AsyncSnapshot<List<Channel>> snapshot, int index) {
+  Widget makeCard2(BuildContext context, AsyncSnapshot<List<DBChannel>> snapshot, int index) {
     print('snapshot len: ' + snapshot.data.length.toString());
 
     return Card(
@@ -555,7 +614,7 @@ class _MyHomePageState extends State<MyHomePage>
 //            Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
 //  }
 
-  Widget makeListTile2(AsyncSnapshot<List<Channel>> snapshot, int index) {
+  Widget makeListTile2(AsyncSnapshot<List<DBChannel>> snapshot, int index) {
     return ListTile(
         onLongPress: () {
           chatLongPress2(snapshot, index);
@@ -566,9 +625,7 @@ class _MyHomePageState extends State<MyHomePage>
         contentPadding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
         leading: Container(
           padding: EdgeInsets.only(right: 12.0),
-          decoration: new BoxDecoration(
-              border: new Border(
-                  right: new BorderSide(width: 1.0, color: Colors.white24))),
+          decoration: new BoxDecoration(border: new Border(right: new BorderSide(width: 1.0, color: Colors.white24))),
           child: Icon(
             Icons.account_circle,
             color: Colors.white,
@@ -585,14 +642,13 @@ class _MyHomePageState extends State<MyHomePage>
           children: <Widget>[
 //            Icon(Icons.vpn_key, color: Colors.yellowAccent),
             Text(
-                snapshot.data[index].lastMessage_user +
+                (snapshot.data[index].lastMessage_user ?? "unknown") +
                     ": " +
-                    snapshot.data[index].lastMessage_text,
+                    (snapshot.data[index].lastMessage_text ?? "unknown"),
                 style: TextStyle(color: Colors.white))
           ],
         ),
-        trailing:
-            Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
+        trailing: Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
   }
 
   void chatLongPress(int index) {
@@ -617,12 +673,11 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  void chatLongPress2(AsyncSnapshot<List<Channel>> snapshot, int index) {
-    String textValue = null;
+  void chatLongPress2(AsyncSnapshot<List<DBChannel>> snapshot, int index) {
+    String textValue;
 
     TextField textField = TextField(
-      decoration: InputDecoration(
-          hintText: 'new name for ${snapshot.data[index].name}'),
+      decoration: InputDecoration(hintText: 'new name for ${snapshot.data[index].name}'),
       onChanged: (String value) async {
         textValue = value;
       },
@@ -632,13 +687,43 @@ class _MyHomePageState extends State<MyHomePage>
       context: context,
       builder: (BuildContext context) {
         // return object of type Dialog
+
+        var qrdata = {};
+        qrdata['sharedFromNick'] = myNick;
+        qrdata['sharedSecret'] = Utils.base58encode(snapshot.data[index].sharedSecret);
+        qrdata['privateSigningKey'] = Utils.base58encode(snapshot.data[index].nodeId);
+
+        String message = jsonEncode(qrdata);
+
+        var qrCodeImage = CustomPaint(
+          size: Size.square(80),
+          painter: QrPainter(
+            data: message,
+            errorCorrectionLevel: QrErrorCorrectLevel.M,
+            version: QrVersions.auto,
+            color: Colors.black,
+            emptyColor: Colors.white,
+            gapless: true,
+            embeddedImageStyle: QrEmbeddedImageStyle(
+              size: Size.square(60),
+            ),
+          ),
+        );
+
         return AlertDialog(
           title: new Text("Settings [${snapshot.data[index].name}]"),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
+                Align(
+                  alignment: Alignment.center,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0).copyWith(bottom: 40),
+                    child: qrCodeImage,
+                  ),
+                ),
                 Text('Change name for Channel:'),
-                textField,
+                textField
               ],
             ),
           ),
@@ -654,8 +739,7 @@ class _MyHomePageState extends State<MyHomePage>
               child: new Text("remove"),
               onPressed: () {
                 Navigator.of(context).pop();
-                ConnectionService.appDatabase
-                    .removeChannel(snapshot.data[index].id);
+                RedPandaLightClient.removeChannel(snapshot.data[index].id);
               },
             ),
             new FlatButton(
@@ -664,8 +748,7 @@ class _MyHomePageState extends State<MyHomePage>
                 Navigator.of(context).pop();
 
                 if (textValue != null) {
-                  ConnectionService.appDatabase
-                      .renameChannel(snapshot.data[index].id, textValue);
+                  RedPandaLightClient.renameChannel(snapshot.data[index].id, textValue);
                 }
               },
             ),
@@ -675,8 +758,8 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  void chatOnTap(AsyncSnapshot<List<Channel>> snapshot, int index) {
-    ConnectionService.appDatabase.removeChannel(snapshot.data[index].id);
+  void chatOnTap(AsyncSnapshot<List<DBChannel>> snapshot, int index) {
+    RedPandaLightClient.removeChannel(snapshot.data[index].id);
 //    showDialog(
 //      context: context,
 //      builder: (BuildContext context) {
@@ -714,6 +797,7 @@ class _MyHomePageState extends State<MyHomePage>
       RedPandaLightClient.shutdown();
     } else if (state == AppLifecycleState.resumed) {
       runService();
+      flutterLocalNotificationsPlugin.cancelAll();
     }
 
     print('new app state: ' + state.toString());

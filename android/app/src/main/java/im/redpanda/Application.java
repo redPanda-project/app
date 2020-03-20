@@ -9,6 +9,8 @@ import io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin;
 
 import io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin;
 
+import com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin;
+
 //public class Application extends FlutterApplication implements PluginRegistrantCallback {
 //    @Override
 //    public void onCreate() {
@@ -41,5 +43,8 @@ public class Application extends FlutterApplication implements PluginRegistrantC
          */
         FirebaseMessagingPlugin.registerWith(registry.registrarFor("io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin"));
         SharedPreferencesPlugin.registerWith(registry.registrarFor("io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin"));
+
+        FlutterLocalNotificationsPlugin.registerWith(registry.registrarFor("com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin"));
+
     }
 }
