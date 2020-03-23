@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:preferences/preference_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:redpanda/activities/ChatView.dart';
 import 'package:redpanda/activities/preferences.dart';
 import 'package:redpanda/service.dart';
 import 'dart:ui' as ui;
@@ -30,6 +32,8 @@ import 'package:workmanager/workmanager.dart';
 bool serviceCompletelyStarted = false;
 
 Function mySetState;
+
+bool serviceRunning = false;
 
 int _counter = 0;
 
@@ -141,7 +145,8 @@ void main() async {
 //          requiresCharging: false,
 //          requiresDeviceIdle: false,
 //          requiresStorageNotLow: true),
-      existingWorkPolicy: ExistingWorkPolicy.replace,
+//      existingWorkPolicy: ExistingWorkPolicy.replace,
+      existingWorkPolicy: ExistingWorkPolicy.append,
       frequency: Duration(minutes: 15));
 
   await runService();
@@ -242,6 +247,10 @@ Future<void> handleSignIn(setState) async {
 }
 
 Future<void> runService() async {
+  if (serviceRunning) {
+    return;
+  }
+
 //  SharedPreferences.setMockInitialValues({}); // set initial values here if desired
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -390,9 +399,11 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     }
 
     print('test insert new channel');
-    for (int i = 0; i < 20; i++) {
-      RedPandaLightClient.createNewChannel("Name " + i.toString() + " " + new Random().nextInt(100).toString());
-    }
+//    for (int i = 0; i < 1; i++) {
+//      RedPandaLightClient.createNewChannel("Name " + i.toString() + " " + new Random().nextInt(100).toString());
+//    }
+
+    scanQRCode();
 
 //    setState(() {
 //      // This call to setState tells the Flutter framework that something has
@@ -759,7 +770,11 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   }
 
   void chatOnTap(AsyncSnapshot<List<DBChannel>> snapshot, int index) {
-    RedPandaLightClient.removeChannel(snapshot.data[index].id);
+    DBChannel channel = snapshot.data[index];
+
+    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatView(channel.id, channel)));
+
+//    RedPandaLightClient.removeChannel(snapshot.data[index].id);
 //    showDialog(
 //      context: context,
 //      builder: (BuildContext context) {
@@ -791,11 +806,20 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     // TODO: implement didChangeAccessibilityFeatures
   }
 
+  Timer shutdownTimer;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
-      RedPandaLightClient.shutdown();
+      const timeRepeatConectionMaintain = Duration(seconds: 20);
+      shutdownTimer = new Timer.periodic(timeRepeatConectionMaintain, (Timer t) {
+        RedPandaLightClient.shutdown();
+        serviceRunning = false;
+      });
     } else if (state == AppLifecycleState.resumed) {
+      if (shutdownTimer != null) {
+        shutdownTimer.cancel();
+      }
       runService();
       flutterLocalNotificationsPlugin.cancelAll();
     }
@@ -839,5 +863,14 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   @override
   Future<bool> didPushRoute(String route) {
     return Future<bool>.value(false);
+  }
+
+  void scanQRCode() async {
+    String barcode = await BarcodeScanner.scan();
+
+    var qrdata = jsonDecode(barcode);
+
+    RedPandaLightClient.channelFromData(qrdata['sharedFromNick'], Utils.base58decode(qrdata['sharedSecret']),
+        Utils.base58decode(qrdata['privateSigningKey']));
   }
 }
