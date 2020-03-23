@@ -246,10 +246,31 @@ Future<void> handleSignIn(setState) async {
   }
 }
 
+onNewMessage(DBMessageWithFriend msg) {
+  print("dkjahdnaueghruewrgjew new message: " + msg.message.content);
+
+  // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+  var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+  var initializationSettingsIOS = IOSInitializationSettings();
+  var initializationSettings = InitializationSettings(initializationSettingsAndroid, initializationSettingsIOS);
+  flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
+
+  var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'your channel id', 'your channel name', 'your channel description',
+      importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
+  var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+  var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+  flutterLocalNotificationsPlugin.show(
+      0, 'New Message', '${msg?.friend?.name ?? "unknown"}: ${msg.message.content}', platformChannelSpecifics,
+      payload: 'item x');
+}
+
 Future<void> runService() async {
   if (serviceRunning) {
     return;
   }
+
+  RedPandaLightClient.onNewMessage = onNewMessage;
 
 //  SharedPreferences.setMockInitialValues({}); // set initial values here if desired
 
