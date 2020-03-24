@@ -83,10 +83,10 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
 
   print('obtained background message ${message}');
 
-  runService();
+//  runService();
 
-  const oneSec = const Duration(seconds: 3);
-  new Timer(oneSec, () => RedPandaLightClient.shutdown());
+//  const oneSec = const Duration(seconds: 3);
+//  new Timer(oneSec, () => RedPandaLightClient.shutdown());
 
   // Or do other work.
 
@@ -97,21 +97,22 @@ void callbackDispatcher() {
   Workmanager.executeTask((task, inputData) async {
     print("Native called background task: $task"); //simpleTask will be emitted here.
 
-    runService();
-
-    const oneSec = const Duration(seconds: 20);
-    new Timer(oneSec, () => RedPandaLightClient.shutdown());
+//    runService();
+//
+//    const oneSec = const Duration(seconds: 20);
+//    new Timer(oneSec, () => RedPandaLightClient.shutdown());
 
 //
 
-    print("from worker22!");
-//    return new Future.delayed(const Duration(seconds: 1), shutdownNow);
-    return;
+//    print("from worker22!");
+    return new Future.delayed(const Duration(seconds: 22), shutdownNow);
+//    return;
   });
 }
 
 bool shutdownNow() {
-//  RedPandaLightClient.shutdown();
+  print("shutdown 23123");
+  RedPandaLightClient.shutdown();
   return true;
 }
 
@@ -250,6 +251,10 @@ Future<void> handleSignIn(setState) async {
 onNewMessage(DBMessageWithFriend msg) {
   print("dkjahdnaueghruewrgjew new message: " + msg.message.content);
 
+  if (msg.fromMe) {
+    return;
+  }
+
   // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
   var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
   var initializationSettingsIOS = IOSInitializationSettings();
@@ -270,6 +275,8 @@ Future<void> runService() async {
   if (serviceRunning) {
     return;
   }
+
+  serviceRunning = true;
 
   RedPandaLightClient.onNewMessage = onNewMessage;
 
@@ -364,10 +371,27 @@ class MyHomePage extends StatefulWidget {
 Future<void> onSelectNotification(String s) {}
 
 class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserver {
+  String statusText = "Welcome, redpanda is loading...";
+
+  @override
+  void reassemble() {
+//    print("shutdown reassemble");
+//    RedPandaLightClient.shutdown();
+    super.reassemble();
+  }
+
+  onNewStatus(String msg) {
+    setState(() {
+      statusText = msg;
+    });
+  }
+
   @override
   void initState() {
 //    handleSignIn(setState);
     super.initState();
+
+    RedPandaLightClient.onNewStatus = onNewStatus;
 
     mySetState = setState;
 
@@ -514,6 +538,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 ////          );
 //        }).build(context);
 
+    Widget mainView;
+
     /**
      * ConnectionService.appDatabase may be null in test cases where the
      * redpanda light client library was not initialized.
@@ -538,9 +564,9 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
             }
           });
 
-      return streamBuilder;
+      mainView = streamBuilder;
     } else {
-      return Center(
+      mainView = Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(1, 1, 1, 1)),
         ),
@@ -577,6 +603,22 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //        ],
 //      );
     }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(padding: EdgeInsets.all(8.0).copyWith(bottom: 4).copyWith(left: 14),
+          child: Text(statusText, style: Theme.of(context).textTheme.title.copyWith(color: Colors.white10)),
+        ),
+
+//          Text(
+//            '$_counter',
+//            style: Theme.of(context).textTheme.display1,
+//          ),
+        Expanded(child: mainView)
+      ],
+    );
   }
 
 //  Widget makeCard(BuildContext context, int index) {
@@ -834,6 +876,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
   @override
   void dispose() {
+    print("shutdown dispose");
+    RedPandaLightClient.shutdown();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -848,16 +892,16 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
-      const timeRepeatConectionMaintain = Duration(minutes: 10);
-      shutdownTimer = new Timer.periodic(timeRepeatConectionMaintain, (Timer t) {
-        RedPandaLightClient.shutdown();
-        serviceRunning = false;
-      });
+//      const timeRepeatConectionMaintain = Duration(minutes: 10);
+//      shutdownTimer = new Timer(timeRepeatConectionMaintain, () {
+//        RedPandaLightClient.shutdown();
+//        serviceRunning = false;
+//      });
     } else if (state == AppLifecycleState.resumed) {
       if (shutdownTimer != null) {
         shutdownTimer.cancel();
       }
-      runService();
+//      runService();
       flutterLocalNotificationsPlugin.cancelAll();
     }
 

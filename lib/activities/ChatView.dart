@@ -31,7 +31,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:date_format/date_format.dart';
+import 'package:date_format/date_format.dart' show formatDate, HH, nn, ss;
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:redpanda/activities/const.dart';
@@ -69,7 +69,7 @@ class ChatScreen extends StatefulWidget {
   State createState() => new ChatScreenState(this.channelId, this.channel);
 }
 
-class ChatScreenState extends State<ChatScreen> {
+class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserver {
   ChatScreenState(this.channelId, this.channel);
 
   final int channelId;
@@ -93,16 +93,26 @@ class ChatScreenState extends State<ChatScreen> {
   final TextEditingController textEditingController = new TextEditingController();
   final ScrollController listScrollController = new ScrollController();
   final FocusNode focusNode = new FocusNode();
+  Stream<List<DBMessageWithFriend>> messageStream;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     focusNode.addListener(onFocusChange);
+
+
 
     isLoading = false;
     isShowSticker = false;
 
     readLocal();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   void onFocusChange() {
@@ -125,6 +135,7 @@ class ChatScreenState extends State<ChatScreen> {
 //
 //    Firestore.instance.collection('users').document(id).updateData({'chattingWith': peerId});
 
+    messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
     setState(() {});
   }
 
@@ -673,7 +684,7 @@ class ChatScreenState extends State<ChatScreen> {
       child: false
           ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(themeColor)))
           : StreamBuilder(
-              stream: RedPandaLightClient.watchDBMessageEntries(channelId),
+              stream: messageStream,
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return Center(
@@ -691,5 +702,61 @@ class ChatScreenState extends State<ChatScreen> {
               },
             ),
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive) {
+    } else if (state == AppLifecycleState.resumed) {
+      new Timer(Duration(seconds: 1), () {
+        setState(() {
+          messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
+        });
+      });
+    }
+
+    print('new app state: ' + state.toString() + " ####################################");
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    // TODO: implement didChangeAccessibilityFeatures
+  }
+
+  @override
+  void didChangeLocales(List<Locale> locale) {
+    // TODO: implement didChangeLocales
+  }
+
+  @override
+  void didChangeMetrics() {
+    // TODO: implement didChangeMetrics
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    // TODO: implement didChangePlatformBrightness
+  }
+
+  @override
+  void didChangeTextScaleFactor() {
+    // TODO: implement didChangeTextScaleFactor
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    // TODO: implement didHaveMemoryPressure
+  }
+
+  @override
+  Future<bool> didPopRoute() {
+    // TODO: implement didPopRoute
+    return null;
+  }
+
+  @override
+  Future<bool> didPushRoute(String route) {
+    // TODO: implement didPushRoute
+    return null;
   }
 }
