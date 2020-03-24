@@ -14,7 +14,7 @@ import 'package:redpanda/activities/ChatView.dart';
 import 'package:redpanda/activities/preferences.dart';
 import 'package:redpanda/service.dart';
 import 'dart:ui' as ui;
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -96,12 +96,12 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
 void callbackDispatcher() {
   Workmanager.executeTask((task, inputData) async {
     print("Native called background task: $task"); //simpleTask will be emitted here.
-//
-//    runService();
-//
-////    const oneSec = const Duration(seconds: 3);
-////    new Timer(oneSec, () => RedPandaLightClient.shutdown());
-//
+
+    runService();
+
+    const oneSec = const Duration(seconds: 20);
+    new Timer(oneSec, () => RedPandaLightClient.shutdown());
+
 //
 
     print("from worker22!");
@@ -146,7 +146,8 @@ void main() async {
 //          requiresDeviceIdle: false,
 //          requiresStorageNotLow: true),
 //      existingWorkPolicy: ExistingWorkPolicy.replace,
-      existingWorkPolicy: ExistingWorkPolicy.append,
+      existingWorkPolicy: ExistingWorkPolicy.replace,
+      initialDelay: Duration(minutes: 60),
       frequency: Duration(minutes: 15));
 
   await runService();
@@ -742,6 +743,21 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
           ),
         );
 
+        var qrCodeImageWithOnTap = GestureDetector(
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: message));
+            Fluttertoast.showToast(
+                msg: "Channel copied to clipboard.",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.BOTTOM,
+                timeInSecForIos: 1,
+                backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
+                textColor: Colors.white,
+                fontSize: 16.0);
+          },
+          child: qrCodeImage,
+        );
+
         return AlertDialog(
           title: new Text("Settings [${snapshot.data[index].name}]"),
           content: SingleChildScrollView(
@@ -751,7 +767,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                   alignment: Alignment.center,
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0).copyWith(bottom: 40),
-                    child: qrCodeImage,
+                    child: qrCodeImageWithOnTap,
                   ),
                 ),
                 Text('Change name for Channel:'),
@@ -832,7 +848,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
-      const timeRepeatConectionMaintain = Duration(seconds: 20);
+      const timeRepeatConectionMaintain = Duration(minutes: 10);
       shutdownTimer = new Timer.periodic(timeRepeatConectionMaintain, (Timer t) {
         RedPandaLightClient.shutdown();
         serviceRunning = false;

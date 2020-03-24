@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:preferences/preferences.dart';
+import 'package:redpanda_light_client/export.dart';
 
 class Preferences extends StatelessWidget {
   GoogleSignIn googleSignIn;
@@ -16,6 +19,24 @@ class Preferences extends StatelessWidget {
       ),
       body: PreferencePage([
         PreferenceTitle('General'),
+        TextFieldPreference(
+          'Import Channel',
+          'data',
+          defaultVal: '',
+          onChange: (text) {
+            //todo appDatabase
+//            ConnectionService.appDatabase.setNickname(text);
+            Map<String, dynamic> qrdata = jsonDecode(text);
+
+            if (!qrdata.containsKey('sharedFromNick') || !qrdata.containsKey('sharedSecret')) {
+              return;
+            }
+
+
+            RedPandaLightClient.channelFromData(qrdata['sharedFromNick'], Utils.base58decode(qrdata['sharedSecret']),
+                Utils.base58decode(qrdata['privateSigningKey']));
+          },
+        ),
         TextFieldPreference(
           'Nickname',
           'nickname',
