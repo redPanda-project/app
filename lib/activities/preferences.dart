@@ -26,15 +26,13 @@ class Preferences extends StatelessWidget {
           onChange: (text) {
             //todo appDatabase
 //            ConnectionService.appDatabase.setNickname(text);
-            Map<String, dynamic> qrdata = jsonDecode(text);
+//            Map<String, dynamic> qrdata = jsonDecode(text);
 
-            if (!qrdata.containsKey('sharedFromNick') || !qrdata.containsKey('sharedSecret')) {
-              return;
-            }
+//            if (!qrdata.containsKey('sharedFromNick') || !qrdata.containsKey('sharedSecret')) {
+//              return;
+//            }
 
-
-            RedPandaLightClient.channelFromData(qrdata['sharedFromNick'], Utils.base58decode(qrdata['sharedSecret']),
-                Utils.base58decode(qrdata['privateSigningKey']));
+            RedPandaLightClient.channelFromData("unnamed", text);
           },
         ),
         TextFieldPreference(

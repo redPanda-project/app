@@ -33,8 +33,6 @@ bool serviceCompletelyStarted = false;
 
 Function mySetState;
 
-bool serviceRunning = false;
-
 int _counter = 0;
 
 GoogleSignIn googleSignIn = GoogleSignIn(
@@ -97,10 +95,10 @@ void callbackDispatcher() {
   Workmanager.executeTask((task, inputData) async {
     print("Native called background task: $task"); //simpleTask will be emitted here.
 
-//    runService();
-//
-//    const oneSec = const Duration(seconds: 20);
-//    new Timer(oneSec, () => RedPandaLightClient.shutdown());
+    runService();
+
+    const oneSec = const Duration(seconds: 20);
+    new Timer(oneSec, () => RedPandaLightClient.shutdown());
 
 //
 
@@ -272,12 +270,6 @@ onNewMessage(DBMessageWithFriend msg) {
 }
 
 Future<void> runService() async {
-  if (serviceRunning) {
-    return;
-  }
-
-  serviceRunning = true;
-
   RedPandaLightClient.onNewMessage = onNewMessage;
 
 //  SharedPreferences.setMockInitialValues({}); // set initial values here if desired
@@ -372,6 +364,7 @@ Future<void> onSelectNotification(String s) {}
 
 class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserver {
   String statusText = "Welcome, redpanda is loading...";
+  Stream<List<DBChannel>> channelStream;
 
   @override
   void reassemble() {
@@ -390,6 +383,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   void initState() {
 //    handleSignIn(setState);
     super.initState();
+
+    channelStream = RedPandaLightClient.watchDBChannelEntries();
 
     RedPandaLightClient.onNewStatus = onNewStatus;
 
@@ -546,8 +541,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
      * In this case we just display a waiting spinner.
      */
     if (serviceCompletelyStarted) {
-      StreamBuilder<List<DBChannel>> streamBuilder = StreamBuilder(
-          stream: RedPandaLightClient.watchDBChannelEntries(),
+      StreamBuilder<List<DBChannel>> streamBuilder = /**/ StreamBuilder(
+          stream: channelStream,
           builder: (context, AsyncSnapshot<List<DBChannel>> snapshot) {
             if (!snapshot.hasData) {
               return Center(
@@ -608,7 +603,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Padding(padding: EdgeInsets.all(8.0).copyWith(bottom: 4).copyWith(left: 14),
+        Padding(
+          padding: EdgeInsets.all(8.0).copyWith(bottom: 4).copyWith(left: 14),
           child: Text(statusText, style: Theme.of(context).textTheme.title.copyWith(color: Colors.white10)),
         ),
 
@@ -763,12 +759,14 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       builder: (BuildContext context) {
         // return object of type Dialog
 
-        var qrdata = {};
-        qrdata['sharedFromNick'] = myNick;
-        qrdata['sharedSecret'] = Utils.base58encode(snapshot.data[index].sharedSecret);
-        qrdata['privateSigningKey'] = Utils.base58encode(snapshot.data[index].nodeId);
-
-        String message = jsonEncode(qrdata);
+//        var qrdata = {};
+//        qrdata['sharedFromNick'] = myNick;
+//        qrdata['sharedSecret'] = Utils.base58encode(snapshot.data[index].sharedSecret);
+//        qrdata['privateSigningKey'] = Utils.base58encode(snapshot.data[index].nodeId);
+//
+//        String message = jsonEncode(qrdata);
+        var channel = new Channel(snapshot.data[index]);
+        String message = channel.shareString();
 
         var qrCodeImage = CustomPaint(
           size: Size.square(80),
@@ -891,18 +889,26 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    statusText = "reloading...";
     if (state == AppLifecycleState.inactive) {
+//      RedPandaLightClient.shutdown();
 //      const timeRepeatConectionMaintain = Duration(minutes: 10);
 //      shutdownTimer = new Timer(timeRepeatConectionMaintain, () {
 //        RedPandaLightClient.shutdown();
-//        serviceRunning = false;
 //      });
     } else if (state == AppLifecycleState.resumed) {
       if (shutdownTimer != null) {
         shutdownTimer.cancel();
       }
-//      runService();
+      if (!RedPandaLightClient.running) {
+        runService();
+      }
       flutterLocalNotificationsPlugin.cancelAll();
+      new Timer(Duration(seconds: 1), () {
+        setState(() {
+          channelStream = RedPandaLightClient.watchDBChannelEntries();
+        });
+      });
     }
 
     print('new app state: ' + state.toString());
@@ -949,9 +955,10 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   void scanQRCode() async {
     String barcode = await BarcodeScanner.scan();
 
-    var qrdata = jsonDecode(barcode);
+//    var qrdata = jsonDecode(barcode);
+//    RedPandaLightClient.channelFromData(qrdata['sharedFromNick'], Utils.base58decode(qrdata['sharedSecret']),
+//        Utils.base58decode(qrdata['privateSigningKey']));
 
-    RedPandaLightClient.channelFromData(qrdata['sharedFromNick'], Utils.base58decode(qrdata['sharedSecret']),
-        Utils.base58decode(qrdata['privateSigningKey']));
+    new Timer(Duration(seconds: 1), () => RedPandaLightClient.channelFromData("unnamed", barcode));
   }
 }
