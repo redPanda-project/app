@@ -44,10 +44,10 @@ dependencies:
   firebase_auth: ^0.15.5+2
   sentry: ">=3.0.0 <4.0.0"
   redpanda_light_client:
-    git:
-      url: https://github.com/redPanda-project/redpanda_light_client.git
-      ref: dev #using dev branch
-  #      path: ../redpanda_light_client
+    #    git:
+    #      url: https://github.com/redPanda-project/redpanda_light_client.git
+    #      ref: dev #using dev branch
+    path: ../redpanda_light_client
   path_provider: ^1.6.5
   firebase_messaging:
   #    path: ../flutterfire/packages/firebase_messaging
@@ -57,6 +57,8 @@ dependencies:
   barcode_scan: ^2.0.1
   date_format: ^1.0.8
   cached_network_image: ^2.0.0
+  flutter_downloader: ^1.4.1
+  open_file: ^3.0.1
 
 
 dev_dependencies:
@@ -75,8 +77,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #  - images/a_dot_burr.jpeg
+  assets:
+    - images/icon.png
   #  - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

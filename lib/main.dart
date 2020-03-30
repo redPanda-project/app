@@ -1,17 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:open_file/open_file.dart';
 import 'package:preferences/preference_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:redpanda/activities/ChatView.dart';
 import 'package:redpanda/activities/preferences.dart';
+import 'package:redpanda/redPanda/RedPandaFlutter.dart';
 import 'package:redpanda/service.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
@@ -95,15 +99,15 @@ void callbackDispatcher() {
   Workmanager.executeTask((task, inputData) async {
     print("Native called background task: $task"); //simpleTask will be emitted here.
 
-    runService();
+    await runService();
 
-    const oneSec = const Duration(seconds: 20);
-    new Timer(oneSec, () => RedPandaLightClient.shutdown());
+//    const oneSec = const Duration(seconds: 20);
+//    new Timer(oneSec, () => RedPandaLightClient.shutdown());
 
 //
 
 //    print("from worker22!");
-    return new Future.delayed(const Duration(seconds: 22), shutdownNow);
+    return new Future.delayed(const Duration(seconds: 30), shutdownNow);
 //    return;
   });
 }
@@ -128,13 +132,14 @@ void main() async {
   };
 
   WidgetsFlutterBinding.ensureInitialized();
-
   await flutterLocalNotificationsPlugin.cancelAll();
+
+  await FlutterDownloader.initialize();
 
   await Workmanager.initialize(callbackDispatcher,
       // The top level function, aka callbackDispatcher
       isInDebugMode:
-          true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+          false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
       );
 //  await Workmanager.cancelAll();
   await Workmanager.registerPeriodicTask("1", "task1",
@@ -146,7 +151,7 @@ void main() async {
 //          requiresStorageNotLow: true),
 //      existingWorkPolicy: ExistingWorkPolicy.replace,
       existingWorkPolicy: ExistingWorkPolicy.replace,
-      initialDelay: Duration(minutes: 60),
+      initialDelay: Duration(minutes: 30),
       frequency: Duration(minutes: 15));
 
   await runService();
@@ -312,7 +317,8 @@ Future<void> runService() async {
 //  service = new Service(kademliaId);
 //  service.start();
 
-  await RedPandaLightClient.init(dataFolderPath, port);
+//  await RedPandaLightClient.init(dataFolderPath, port);
+  await RedPandaFlutter.start(dataFolderPath, port);
 }
 
 class MyApp extends StatelessWidget {
@@ -365,11 +371,26 @@ Future<void> onSelectNotification(String s) {}
 class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserver {
   String statusText = "Welcome, redpanda is loading...";
   Stream<List<DBChannel>> channelStream;
+  ReceivePort _port = ReceivePort();
+
+  static void downloadCallback(String id, DownloadTaskStatus status, int progress) {
+    final SendPort send = ui.IsolateNameServer.lookupPortByName('downloader_send_port');
+    send.send([id, status, progress]);
+  }
 
   @override
   void reassemble() {
 //    print("shutdown reassemble");
 //    RedPandaLightClient.shutdown();
+//    RedPandaFlutter.start();
+//    RedPandaFlutter.stop();
+    runService();
+//    var u = Utils.getCurrentTimeMillis();
+//    for (int i = 0; i < 1000; i++) {
+//      new NodeId.withNewKeyPair();
+//      print('k');
+//    }
+//    print("time for pub key gen: ${Utils.getCurrentTimeMillis() - u}");
     super.reassemble();
   }
 
@@ -418,6 +439,27 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       );
       _isConfigured = true;
     }
+
+    ui.IsolateNameServer.registerPortWithName(_port.sendPort, 'downloader_send_port');
+    _port.listen((dynamic data) async {
+      String taskId = data[0];
+      DownloadTaskStatus status = data[1];
+      int progress = data[2];
+
+      if (progress == 100) {
+        flutterLocalNotificationsPlugin.cancelAll();
+        var directory = await getApplicationDocumentsDirectory();
+        OpenFile.open("${directory.path}/android.apk");
+//        FlutterDownloader.open(taskId: taskId);
+      }
+
+      setState(() {
+        statusText = "Downloading update: ${progress} %";
+        print(statusText);
+      });
+    });
+
+    FlutterDownloader.registerCallback(downloadCallback);
   }
 
   void _incrementCounter() {
@@ -439,12 +481,13 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
     }
 
-    print('test insert new channel');
+//    print('test insert new channel');
 //    for (int i = 0; i < 1; i++) {
 //      RedPandaLightClient.createNewChannel("Name " + i.toString() + " " + new Random().nextInt(100).toString());
 //    }
 
     scanQRCode();
+//    downloadUpdate();
 
 //    setState(() {
 //      // This call to setState tells the Flutter framework that something has
@@ -473,6 +516,16 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
+    String textValue;
+
+    TextField textField = TextField(
+      decoration: InputDecoration(),
+      autofocus: true,
+      onChanged: (String value) async {
+        textValue = value;
+      },
+    );
+
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -511,6 +564,111 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
         ],
       ),
       body: makeBody(context),
+      drawer: Drawer(
+        // Add a ListView to the drawer. This ensures the user can scroll
+        // through the options in the drawer if there isn't enough vertical
+        // space to fit everything.
+        child: ListView(
+          // Important: Remove any padding from the ListView.
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              child: Text(
+                'redPanda',
+                style: TextStyle(color: Colors.white70),
+              ),
+              decoration: BoxDecoration(
+                  color: Color.fromRGBO(65, 74, 95, 1.0),
+                  image: DecorationImage(image: AssetImage("images/icon.png"), fit: BoxFit.contain)),
+            ),
+            ListTile(
+              title: Text('Create new Channel'),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: new Text("New Channel"),
+                      content: SingleChildScrollView(
+                        child: ListBody(
+                          children: <Widget>[textField],
+                        ),
+                      ),
+                      actions: <Widget>[
+                        // usually buttons at the bottom of the dialog
+                        new FlatButton(
+                          child: new Text("cancle"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        new FlatButton(
+                          child: new Text("create"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            RedPandaLightClient.createNewChannel(textValue);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            ListTile(
+              title: Text('Channel from QR'),
+              onTap: () {
+                Navigator.pop(context);
+                scanQRCode();
+              },
+            ),
+            ListTile(
+              title: Text('Set Name'),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: new Text("New Channel"),
+                      content: SingleChildScrollView(
+                        child: ListBody(
+                          children: <Widget>[textField],
+                        ),
+                      ),
+                      actions: <Widget>[
+                        // usually buttons at the bottom of the dialog
+                        new FlatButton(
+                          child: new Text("cancle"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        new FlatButton(
+                          child: new Text("set"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            RedPandaLightClient.setName(textValue);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            ListTile(
+              title: Text('Download Update'),
+              onTap: () {
+                downloadUpdate();
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
@@ -877,6 +1035,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     print("shutdown dispose");
     RedPandaLightClient.shutdown();
     WidgetsBinding.instance.removeObserver(this);
+    ui.IsolateNameServer.removePortNameMapping('downloader_send_port');
     super.dispose();
   }
 
@@ -889,7 +1048,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    statusText = "reloading...";
+    statusText = "reloading... " + RedPandaLightClient.running.toString();
     if (state == AppLifecycleState.inactive) {
 //      RedPandaLightClient.shutdown();
 //      const timeRepeatConectionMaintain = Duration(minutes: 10);
@@ -900,9 +1059,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       if (shutdownTimer != null) {
         shutdownTimer.cancel();
       }
-      if (!RedPandaLightClient.running) {
-        runService();
-      }
+
+      runService();
       flutterLocalNotificationsPlugin.cancelAll();
       new Timer(Duration(seconds: 1), () {
         setState(() {
@@ -960,5 +1118,15 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //        Utils.base58decode(qrdata['privateSigningKey']));
 
     new Timer(Duration(seconds: 1), () => RedPandaLightClient.channelFromData("unnamed", barcode));
+  }
+
+  void downloadUpdate() async {
+    var directory = await getApplicationDocumentsDirectory();
+    await FlutterDownloader.enqueue(
+      url: 'http://redpanda.im:8081/android.apk',
+      savedDir: directory.path,
+      showNotification: true, // show download progress in status bar (for Android)
+      openFileFromNotification: true, // click on notification to open downloaded file (for Android)
+    );
   }
 }
