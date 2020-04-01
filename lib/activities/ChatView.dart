@@ -31,7 +31,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:date_format/date_format.dart' show formatDate, HH, nn, ss;
+import 'package:date_format/date_format.dart' show formatDate, HH, nn, ss, dd, mm, yy, yyyy;
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:redpanda/activities/const.dart';
@@ -100,8 +100,6 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     focusNode.addListener(onFocusChange);
-
-
 
     isLoading = false;
     isShowSticker = false;
@@ -295,7 +293,46 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
 //                      ),
 //                      margin: EdgeInsets.only(bottom: isLastMessageRight(index) ? 20.0 : 10.0, right: 10.0),
 //                    ),
+
+
+,
+          !isLastMessageRight(index)
+              ? Container(
+            child: Text(
+//                      DateFormat('dd MMM kk:mm')
+//                          .format(DateTime.fromMillisecondsSinceEpoch(int.parse(document['timestamp']))),
+
+              "${formatDate(DateTime.fromMillisecondsSinceEpoch(
+                message.message.timestamp,
+              ), [HH, ':', nn, ':', ss])} - ${formatDate(DateTime.fromMillisecondsSinceEpoch(
+                message.message.timestamp,
+              ), [dd, '.', mm, '.', yy])}",
+              style: TextStyle(color: greyColor, fontSize: 12.0, fontStyle: FontStyle.italic),
+            ),
+            margin: EdgeInsets.only(right: 50.0, top: 5.0, bottom: 5.0),
+          )
+              : Container()
+
+
+
+
+
+
+
+
         ],
+
+
+
+
+
+
+
+
+
+
+
+
         mainAxisAlignment: MainAxisAlignment.end,
       );
     } else {
@@ -419,11 +456,11 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
 //                      DateFormat('dd MMM kk:mm')
 //                          .format(DateTime.fromMillisecondsSinceEpoch(int.parse(document['timestamp']))),
 
-                      formatDate(
-                          DateTime.fromMillisecondsSinceEpoch(
+                      "${formatDate(DateTime.fromMillisecondsSinceEpoch(
                             message.message.timestamp,
-                          ),
-                          [HH, ':', nn, ':', ss]),
+                          ), [HH, ':', nn, ':', ss])} - ${formatDate(DateTime.fromMillisecondsSinceEpoch(
+                            message.message.timestamp,
+                          ), [dd, '.', mm, '.', yy])}",
                       style: TextStyle(color: greyColor, fontSize: 12.0, fontStyle: FontStyle.italic),
                     ),
                     margin: EdgeInsets.only(left: 50.0, top: 5.0, bottom: 5.0),

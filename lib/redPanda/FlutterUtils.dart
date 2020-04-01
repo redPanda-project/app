@@ -2,15 +2,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 class FlutterUtils {
-  static Future<Uint8List> _readFileByte(String filePath) async {
-    File audioFile = new File(filePath);
-    Uint8List bytes;
-    await audioFile.readAsBytes().then((value) {
-      bytes = Uint8List.fromList(value);
-      print('reading of bytes is completed');
-    }).catchError((onError) {
-      print('Exception Error while reading audio from path:' + onError.toString());
-    });
-    return bytes;
+  static Future<Uint8List> readFileByte(String filePath) async {
+    File file = new File(filePath);
+    return await file.readAsBytes();
+  }
+
+  static void writeFileBytes(String filePath, Uint8List data) async {
+    File file = new File(filePath);
+    await file.writeAsBytes(data);
+    return;
   }
 }

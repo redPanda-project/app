@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:barcode_scan/barcode_scan.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -15,6 +17,7 @@ import 'package:preferences/preference_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:redpanda/activities/ChatView.dart';
 import 'package:redpanda/activities/preferences.dart';
+import 'package:redpanda/redPanda/FlutterUtils.dart';
 import 'package:redpanda/redPanda/RedPandaFlutter.dart';
 import 'package:redpanda/service.dart';
 import 'dart:ui' as ui;
@@ -139,20 +142,20 @@ void main() async {
   await Workmanager.initialize(callbackDispatcher,
       // The top level function, aka callbackDispatcher
       isInDebugMode:
-          false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-      );
+      false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+  );
 //  await Workmanager.cancelAll();
   await Workmanager.registerPeriodicTask("1", "task1",
-//      constraints: Constraints(
-//          networkType: NetworkType.connected,
-//          requiresBatteryNotLow: true,
-//          requiresCharging: false,
-//          requiresDeviceIdle: false,
-//          requiresStorageNotLow: true),
+      constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: true,
+          requiresCharging: false,
+          requiresDeviceIdle: false,
+          requiresStorageNotLow: true),
 //      existingWorkPolicy: ExistingWorkPolicy.replace,
       existingWorkPolicy: ExistingWorkPolicy.replace,
       initialDelay: Duration(minutes: 30),
-      frequency: Duration(minutes: 15));
+      frequency: Duration(minutes: 30));
 
   await runService();
 
@@ -227,7 +230,9 @@ Future<void> handleSignIn(setState) async {
 //        _counter = postSnapshot.data['likesCount'] + 1;
         await tx.update(postRef, <String, dynamic>{
           'likesCount': postSnapshot.data['likesCount'] + 1,
-          'lastLogin': DateTime.now().millisecondsSinceEpoch
+          'lastLogin': DateTime
+              .now()
+              .millisecondsSinceEpoch
         });
       } else {
         await tx.set(postRef, <String, dynamic>{'likesCount': 0});
@@ -343,7 +348,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Color.fromRGBO(57, 68, 87, 1),
       ),
       darkTheme: ThemeData(brightness: Brightness.dark),
-      home: MyHomePage(title: 'redPanda'),
+      home: MyHomePage(title: 'redPanda :)'),
     );
   }
 }
@@ -379,11 +384,12 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   }
 
   @override
-  void reassemble() {
+  void reassemble() async {
 //    print("shutdown reassemble");
 //    RedPandaLightClient.shutdown();
 //    RedPandaFlutter.start();
 //    RedPandaFlutter.stop();
+    print("path ${(await getApplicationDocumentsDirectory()).path}");
     runService();
 //    var u = Utils.getCurrentTimeMillis();
 //    for (int i = 0; i < 1000; i++) {
@@ -440,23 +446,51 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       _isConfigured = true;
     }
 
+    int lastProgress = 0;
     ui.IsolateNameServer.registerPortWithName(_port.sendPort, 'downloader_send_port');
     _port.listen((dynamic data) async {
       String taskId = data[0];
       DownloadTaskStatus status = data[1];
       int progress = data[2];
 
-      if (progress == 100) {
-        flutterLocalNotificationsPlugin.cancelAll();
-        var directory = await getApplicationDocumentsDirectory();
-        OpenFile.open("${directory.path}/android.apk");
-//        FlutterDownloader.open(taskId: taskId);
+      /**
+       * 100 % progress may be reported multiple times
+       */
+      if (lastProgress == progress) {
+        return;
       }
+
+      print("progress: ${progress}");
 
       setState(() {
         statusText = "Downloading update: ${progress} %";
-        print(statusText);
       });
+
+      if (progress == 100) {
+        lastProgress = progress;
+        flutterLocalNotificationsPlugin.cancelAll();
+
+        var directory = await getApplicationDocumentsDirectory();
+
+        setState(() {
+          statusText = "Downloading complete, verification of update may take long...";
+        });
+
+        print('read bytes');
+        var readFileByte = await FlutterUtils.readFileByte("${directory.path}/android.apk");
+        print('${readFileByte.length}');
+
+        Uint8List data = await compute(verifyUpdate, readFileByte);
+
+        if (data != null) {
+          print('verified!!!');
+
+          await FlutterUtils.writeFileBytes("${directory.path}/android.apk", data);
+          await OpenFile.open("${directory.path}/android.apk");
+        }
+      }
+
+      lastProgress = progress;
     });
 
     FlutterDownloader.registerCallback(downloadCallback);
@@ -489,6 +523,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     scanQRCode();
 //    downloadUpdate();
 
+//    test();
+
 //    setState(() {
 //      // This call to setState tells the Flutter framework that something has
 //      // changed in this State, which causes it to rerun the build method below
@@ -517,12 +553,21 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     String textValue;
+    String textValue2;
 
     TextField textField = TextField(
       decoration: InputDecoration(),
       autofocus: true,
       onChanged: (String value) async {
         textValue = value;
+      },
+    );
+
+    TextField textField2 = TextField(
+      decoration: InputDecoration(),
+      autofocus: false,
+      onChanged: (String value) async {
+        textValue2 = value;
       },
     );
 
@@ -545,7 +590,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
               color: Colors.white,
               size: 40,
             ),
-            onPressed: () => {
+            onPressed: () =>
+            {
               Fluttertoast.showToast(
                   msg: "This is Center Short Toast",
                   toastLength: Toast.LENGTH_SHORT,
@@ -581,6 +627,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                   color: Color.fromRGBO(65, 74, 95, 1.0),
                   image: DecorationImage(image: AssetImage("images/icon.png"), fit: BoxFit.contain)),
             ),
+
+
             ListTile(
               title: Text('Create new Channel'),
               onTap: () {
@@ -616,6 +664,45 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                 );
               },
             ),
+
+
+            ListTile(
+              title: Text('Create from Text'),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: new Text("New Channel"),
+                      content: SingleChildScrollView(
+                        child: ListBody(
+                          children: <Widget>[Text('Name for Channel'),textField,Text('Channel String'), textField2],
+                        ),
+                      ),
+                      actions: <Widget>[
+                        // usually buttons at the bottom of the dialog
+                        new FlatButton(
+                          child: new Text("cancle"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        new FlatButton(
+                          child: new Text("import"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            RedPandaLightClient.channelFromData(textValue, textValue2);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+
+
             ListTile(
               title: Text('Channel from QR'),
               onTap: () {
@@ -763,7 +850,11 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       children: <Widget>[
         Padding(
           padding: EdgeInsets.all(8.0).copyWith(bottom: 4).copyWith(left: 14),
-          child: Text(statusText, style: Theme.of(context).textTheme.title.copyWith(color: Colors.white10)),
+          child: Text(statusText, style: Theme
+              .of(context)
+              .textTheme
+              .title
+              .copyWith(color: Colors.white10)),
         ),
 
 //          Text(
@@ -1128,5 +1219,64 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       showNotification: true, // show download progress in status bar (for Android)
       openFileFromNotification: true, // click on notification to open downloaded file (for Android)
     );
+  }
+
+//  void test() async {
+//    var directory = await getApplicationDocumentsDirectory();
+//
+//    print('read bytes');
+//    var readFileByte = await FlutterUtils.readFileByte("${directory.path}/android.apk");
+//    print('${readFileByte.length}');
+//
+//    Uint8List data = await compute(verifyUpdate, readFileByte);
+//
+////    var buffer = ByteBuffer.fromList(readFileByte);
+////    int timestamp = buffer.readLong();
+////    var dataLen = buffer.readInt();
+////    var signature = buffer.readBytes(buffer.length - 8 - 4 - dataLen);
+////    var data = buffer.readBytes(dataLen);
+//
+////    var bytesToVerify = ByteBuffer(8 + dataLen);
+////    bytesToVerify.writeLong(timestamp);
+////    bytesToVerify.writeList(data);
+//
+////    var nodeId = NodeId.importPublic(Utils.base58decode(
+////        "N3Zu35JfCBtt3d9AfoUqgkrLQa7y4t462ZBfF2bGrLM1bdhWu6WaieEKYjx93YeaWh66xSqmD7c3MTCMTzSHSe3J"));
+////
+////
+////    var verify = nodeId.verify(bytesToVerify.array(), signature);
+////    print("signature verified for update: ${verify}");
+//
+//    if (data != null) {
+//      print('verified!!!');
+//
+//      await FlutterUtils.writeFileBytes("${directory.path}/android.apk", data);
+//      await OpenFile.open("${directory.path}/android.apk");
+//    }
+//  }
+
+  static Uint8List verifyUpdate(Uint8List readFileByte) {
+    var buffer = ByteBuffer.fromList(readFileByte);
+
+    int timestamp = buffer.readLong();
+    var dataLen = buffer.readInt();
+    var signature = buffer.readBytes(buffer.length - 8 - 4 - dataLen);
+    var data = buffer.readBytes(dataLen);
+
+    var bytesToVerify = ByteBuffer(8 + dataLen);
+    bytesToVerify.writeLong(timestamp);
+    bytesToVerify.writeList(data);
+
+    var nodeId = NodeId.importPublic(
+        Utils.base58decode("N3Zu35JfCBtt3d9AfoUqgkrLQa7y4t462ZBfF2bGrLM1bdhWu6WaieEKYjx93YeaWh66xSqmD7c3MTCMTzSHSe3J"));
+
+    var verify = nodeId.verify(bytesToVerify.array(), signature);
+    print("signature verified for update: ${verify}");
+
+    if (verify) {
+      return data;
+    } else {
+      return null;
+    }
   }
 }
