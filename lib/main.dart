@@ -142,8 +142,8 @@ void main() async {
   await Workmanager.initialize(callbackDispatcher,
       // The top level function, aka callbackDispatcher
       isInDebugMode:
-      false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-  );
+          false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+      );
 //  await Workmanager.cancelAll();
   await Workmanager.registerPeriodicTask("1", "task1",
       constraints: Constraints(
@@ -230,9 +230,7 @@ Future<void> handleSignIn(setState) async {
 //        _counter = postSnapshot.data['likesCount'] + 1;
         await tx.update(postRef, <String, dynamic>{
           'likesCount': postSnapshot.data['likesCount'] + 1,
-          'lastLogin': DateTime
-              .now()
-              .millisecondsSinceEpoch
+          'lastLogin': DateTime.now().millisecondsSinceEpoch
         });
       } else {
         await tx.set(postRef, <String, dynamic>{'likesCount': 0});
@@ -348,7 +346,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Color.fromRGBO(57, 68, 87, 1),
       ),
       darkTheme: ThemeData(brightness: Brightness.dark),
-      home: MyHomePage(title: 'redPanda :)'),
+      home: MyHomePage(title: 'redPanda (:'),
     );
   }
 }
@@ -447,6 +445,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     }
 
     int lastProgress = 0;
+    print('register downloader_send_port');
     ui.IsolateNameServer.registerPortWithName(_port.sendPort, 'downloader_send_port');
     _port.listen((dynamic data) async {
       String taskId = data[0];
@@ -590,8 +589,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
               color: Colors.white,
               size: 40,
             ),
-            onPressed: () =>
-            {
+            onPressed: () => {
               Fluttertoast.showToast(
                   msg: "This is Center Short Toast",
                   toastLength: Toast.LENGTH_SHORT,
@@ -627,8 +625,6 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                   color: Color.fromRGBO(65, 74, 95, 1.0),
                   image: DecorationImage(image: AssetImage("images/icon.png"), fit: BoxFit.contain)),
             ),
-
-
             ListTile(
               title: Text('Create new Channel'),
               onTap: () {
@@ -664,8 +660,6 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                 );
               },
             ),
-
-
             ListTile(
               title: Text('Create from Text'),
               onTap: () {
@@ -677,7 +671,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                       title: new Text("New Channel"),
                       content: SingleChildScrollView(
                         child: ListBody(
-                          children: <Widget>[Text('Name for Channel'),textField,Text('Channel String'), textField2],
+                          children: <Widget>[Text('Name for Channel'), textField, Text('Channel String'), textField2],
                         ),
                       ),
                       actions: <Widget>[
@@ -701,8 +695,6 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                 );
               },
             ),
-
-
             ListTile(
               title: Text('Channel from QR'),
               onTap: () {
@@ -736,7 +728,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                           child: new Text("set"),
                           onPressed: () {
                             Navigator.of(context).pop();
-                            RedPandaLightClient.setName(textValue);
+                            RedPandaLightClient.setName(textValue.trim());
                           },
                         ),
                       ],
@@ -850,11 +842,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       children: <Widget>[
         Padding(
           padding: EdgeInsets.all(8.0).copyWith(bottom: 4).copyWith(left: 14),
-          child: Text(statusText, style: Theme
-              .of(context)
-              .textTheme
-              .title
-              .copyWith(color: Colors.white10)),
+          child: Text(statusText, style: Theme.of(context).textTheme.title.copyWith(color: Colors.white10)),
         ),
 
 //          Text(
@@ -1219,6 +1207,15 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       showNotification: true, // show download progress in status bar (for Android)
       openFileFromNotification: true, // click on notification to open downloaded file (for Android)
     );
+
+    final tasks = await FlutterDownloader.loadTasks();
+
+    for (var task in tasks) {
+      print("task: " + task.progress.toString());
+      if (task.status == DownloadTaskStatus.complete) {
+        print("task completed...");
+      }
+    }
   }
 
 //  void test() async {

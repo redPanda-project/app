@@ -209,26 +209,30 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
   Widget buildItem(int index, DBMessageWithFriend message) {
     if (message.fromMe) {
       // Right (my message)
-      return Row(
-        children: <Widget>[
-          message.message.type == 0
-              // Text
-              ? Container(
-                  child: Text(
-                    message.message.content,
-                    style: TextStyle(color: primaryColor),
-                  ),
-                  padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-                  width: 200.0,
-                  decoration: BoxDecoration(color: greyColor2, borderRadius: BorderRadius.circular(8.0)),
-                  margin: EdgeInsets.only(bottom: isLastMessageRight(index) ? 20.0 : 10.0, right: 10.0),
-                )
-              : message.message.type == 1
-                  // Image
-                  ? Container(
-                      child: FlatButton(
-                        child: Material(
-                          child: new Text("images not supported rn 1"),
+
+      return Container(
+        child: Column(
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                message.message.type == 0
+                    // Text
+                    ? Container(
+                        child: Text(
+                          message.message.content,
+                          style: TextStyle(color: primaryColor),
+                        ),
+                        padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                        width: 200.0,
+                        decoration: BoxDecoration(color: greyColor2, borderRadius: BorderRadius.circular(8.0)),
+                        margin: EdgeInsets.only(right: 10.0),
+                      )
+                    : message.message.type == 1
+                        // Image
+                        ? Container(
+                            child: FlatButton(
+                              child: Material(
+                                child: new Text("images not supported rn 1"),
 //                          CachedNetworkImage(
 //                            placeholder: (context, url) => Container(
 //                              child: CircularProgressIndicator(
@@ -261,28 +265,28 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
 //                            height: 200.0,
 //                            fit: BoxFit.cover,
 //                          ),
-                          borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                          clipBehavior: Clip.hardEdge,
-                        ),
-                        onPressed: () {
+                                borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                                clipBehavior: Clip.hardEdge,
+                              ),
+                              onPressed: () {
 //                          Navigator.push(
 //                              context, MaterialPageRoute(builder: (context) => FullPhoto(url: document['content'])));
-                        },
-                        padding: EdgeInsets.all(0),
-                      ),
-                      margin: EdgeInsets.only(bottom: isLastMessageRight(index) ? 20.0 : 10.0, right: 10.0),
-                    )
-                  // Sticker
-                  : Container(
-                      child: Text(
-                        "Content Type not found",
-                        style: TextStyle(color: primaryColor),
-                      ),
-                      padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-                      width: 200.0,
-                      decoration: BoxDecoration(color: greyColor2, borderRadius: BorderRadius.circular(8.0)),
-                      margin: EdgeInsets.only(bottom: isLastMessageRight(index) ? 20.0 : 10.0, right: 10.0),
-                    )
+                              },
+                              padding: EdgeInsets.all(0),
+                            ),
+                            margin: EdgeInsets.only(bottom: isNextMessageLeft(index) ? 20.0 : 10.0, right: 10.0),
+                          )
+                        // Sticker
+                        : Container(
+                            child: Text(
+                              "Content Type not found",
+                              style: TextStyle(color: primaryColor),
+                            ),
+                            padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                            width: 200.0,
+                            decoration: BoxDecoration(color: greyColor2, borderRadius: BorderRadius.circular(8.0)),
+                            margin: EdgeInsets.only(bottom: isNextMessageLeft(index) ? 20.0 : 10.0, right: 10.0),
+                          )
 
 //          Container(
 //                      child: new Image.asset(
@@ -293,47 +297,35 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
 //                      ),
 //                      margin: EdgeInsets.only(bottom: isLastMessageRight(index) ? 20.0 : 10.0, right: 10.0),
 //                    ),
+              ],
+              mainAxisAlignment: MainAxisAlignment.end,
+            ),
 
-
-,
-          !isLastMessageRight(index)
-              ? Container(
-            child: Text(
+            // Time
+            isNextMessageLeft(index)
+                ? Container(
+                    child: Text(
 //                      DateFormat('dd MMM kk:mm')
 //                          .format(DateTime.fromMillisecondsSinceEpoch(int.parse(document['timestamp']))),
 
-              "${formatDate(DateTime.fromMillisecondsSinceEpoch(
-                message.message.timestamp,
-              ), [HH, ':', nn, ':', ss])} - ${formatDate(DateTime.fromMillisecondsSinceEpoch(
-                message.message.timestamp,
-              ), [dd, '.', mm, '.', yy])}",
-              style: TextStyle(color: greyColor, fontSize: 12.0, fontStyle: FontStyle.italic),
-            ),
-            margin: EdgeInsets.only(right: 50.0, top: 5.0, bottom: 5.0),
-          )
-              : Container()
-
-
-
-
-
-
-
-
-        ],
-
-
-
-
-
-
-
-
-
-
-
-
-        mainAxisAlignment: MainAxisAlignment.end,
+                      "${formatDate(DateTime.fromMillisecondsSinceEpoch(
+                            message.message.timestamp,
+                          ), [HH, ':', nn, ':', ss])} - ${formatDate(DateTime.fromMillisecondsSinceEpoch(
+                            message.message.timestamp,
+                          ), [dd, '.', mm, '.', yy])}",
+                      style: TextStyle(color: greyColor, fontSize: 12.0, fontStyle: FontStyle.italic),
+                    ),
+                    margin: EdgeInsets.only(
+                      top: 5.0,
+                      bottom: 5.0,
+                      right: 10.0,
+                    ),
+                  )
+                : Container()
+          ],
+          crossAxisAlignment: CrossAxisAlignment.end,
+        ),
+        margin: EdgeInsets.only(bottom: 10.0),
       );
     } else {
       // Left (peer message)
@@ -342,25 +334,27 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
           children: <Widget>[
             Row(
               children: <Widget>[
-                isLastMessageLeft(index)
+                isLastMessageNotFromSameUser(index)
                     ? Material(
-                        child:
+                        child: new CircleAvatar(child: new Text(message.friend?.name?.substring(0,3) ?? 'U'), radius: 35 / 2),
+
 //                        new Text("images not supported rn 2"),
-                            CachedNetworkImage(
-                          placeholder: (context, url) => Container(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.0,
-                              valueColor: AlwaysStoppedAnimation<Color>(themeColor),
-                            ),
-                            width: 35.0,
-                            height: 35.0,
-                            padding: EdgeInsets.all(10.0),
-                          ),
-                          imageUrl: "http://via.placeholder.com/150x150",
-                          width: 35.0,
-                          height: 35.0,
-                          fit: BoxFit.cover,
-                        ),
+//                            CachedNetworkImage(
+//                          placeholder: (context, url) => Container(
+//                            child: CircularProgressIndicator(
+//                              strokeWidth: 1.0,
+//                              valueColor: AlwaysStoppedAnimation<Color>(themeColor),
+//                            ),
+//                            width: 35.0,
+//                            height: 35.0,
+//                            padding: EdgeInsets.all(10.0),
+//                          ),
+//                          imageUrl: "http://via.placeholder.com/150x150",
+//                          width: 35.0,
+//                          height: 35.0,
+//                          fit: BoxFit.cover,
+//                        ),
+
                         borderRadius: BorderRadius.all(
                           Radius.circular(18.0),
                         ),
@@ -435,7 +429,7 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
                             padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                             width: 200.0,
                             decoration: BoxDecoration(color: greyColor2, borderRadius: BorderRadius.circular(8.0)),
-                            margin: EdgeInsets.only(bottom: isLastMessageRight(index) ? 20.0 : 10.0, right: 10.0),
+                            margin: EdgeInsets.only(bottom: isNextMessageRight(index) ? 20.0 : 10.0, right: 10.0),
                           )
 //                Container(
 //                            child: new Image.asset(
@@ -450,7 +444,7 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
             ),
 
             // Time
-            isLastMessageLeft(index)
+            isNextMessageRight(index)
                 ? Container(
                     child: Text(
 //                      DateFormat('dd MMM kk:mm')
@@ -474,7 +468,16 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
     }
   }
 
-  bool isLastMessageLeft(int index) {
+  bool isNextMessageLeft(int index) {
+    print('index: $index');
+    if ((index > 0 && listMessage != null && !listMessage[index - 1].fromMe) || index == 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool isNextMessageRight(int index) {
     if ((index > 0 && listMessage != null && listMessage[index - 1].fromMe) || index == 0) {
       return true;
     } else {
@@ -482,8 +485,9 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
     }
   }
 
-  bool isLastMessageRight(int index) {
-    if ((index > 0 && listMessage != null && listMessage[index - 1].fromMe) || index == 0) {
+  bool isLastMessageNotFromSameUser(int index) {
+    if ((index > 0 && listMessage != null && listMessage[index - 1].message.from != listMessage[index].message.from) ||
+        index == 0) {
       return true;
     } else {
       return false;
@@ -745,7 +749,7 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
     } else if (state == AppLifecycleState.resumed) {
-      new Timer(Duration(seconds: 1), () {
+      new Timer(Duration(seconds: 2), () {
         setState(() {
           messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
         });
