@@ -35,21 +35,24 @@ import 'package:date_format/date_format.dart' show formatDate, HH, nn, ss, dd, m
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:redpanda/activities/const.dart';
+import 'package:redpanda/main.dart';
 import 'package:redpanda_light_client/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatView extends StatelessWidget {
   final int channelId;
-  final DBChannel channel;
+  DBChannel channel;
+  final String channelName;
 
-  ChatView(this.channelId, this.channel) : super();
+  ChatView(this.channelId, {this.channel, this.channelName}) : super();
 
   @override
   Widget build(BuildContext context) {
+    print(channelName);
     return new Scaffold(
       appBar: new AppBar(
         title: new Text(
-          channel.name,
+          channel?.name ?? channelName,
           style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -61,7 +64,7 @@ class ChatView extends StatelessWidget {
 
 class ChatScreen extends StatefulWidget {
   final int channelId;
-  final DBChannel channel;
+  DBChannel channel;
 
   ChatScreen(this.channelId, this.channel) : super();
 
@@ -73,7 +76,7 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
   ChatScreenState(this.channelId, this.channel);
 
   final int channelId;
-  final DBChannel channel;
+  DBChannel channel;
 
 //  String peerId;
 //  String peerAvatar;
@@ -133,8 +136,17 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
 //
 //    Firestore.instance.collection('users').document(id).updateData({'chattingWith': peerId});
 
-    messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
-    setState(() {});
+    await runService();
+    var channelById = await RedPandaLightClient.getChannelById(channelId);
+
+    if (channelById == null) {
+      throw new Exception('no channel found with id: $channelId ....');
+    }
+
+    setState(() {
+      messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
+      channel = channelById;
+    });
   }
 
   Future getImage() async {
@@ -336,7 +348,12 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
               children: <Widget>[
                 isLastMessageNotFromSameUser(index)
                     ? Material(
-                        child: new CircleAvatar(child: new Text(message.friend?.name?.substring(0,3) ?? 'U'), radius: 35 / 2),
+                        child: new CircleAvatar(
+                          child: new Text(generateDisplayName(message)),
+                          radius: 35 / 2,
+                          backgroundColor: generateUserColor(message),
+                          foregroundColor: Colors.white70,
+                        ),
 
 //                        new Text("images not supported rn 2"),
 //                            CachedNetworkImage(
@@ -465,6 +482,24 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
         ),
         margin: EdgeInsets.only(bottom: 10.0),
       );
+    }
+  }
+
+  Color generateUserColor(DBMessageWithFriend message) {
+    if (message.friend?.id == null) {
+      return Colors.black54;
+    }
+    return Color(message.friend.id);
+  }
+
+  String generateDisplayName(DBMessageWithFriend message) {
+    if (message.friend?.name == null) {
+      return "?";
+    }
+    if (message.friend?.name?.length > 3) {
+      return message.friend?.name?.substring(0, 3);
+    } else {
+      return message.friend?.name;
     }
   }
 
@@ -750,9 +785,10 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
     if (state == AppLifecycleState.inactive) {
     } else if (state == AppLifecycleState.resumed) {
       new Timer(Duration(seconds: 2), () {
-        setState(() {
-          messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
-        });
+        readLocal();
+//        setState(() {
+//          messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
+//        });
       });
     }
 

@@ -15,7 +15,7 @@ class Service {
     // Assert expressions are only evaluated during development. They are ignored
     // in production. Therefore, this code only sets `inDebugMode` to true
     // in a development environment.
-    assert(inDebugMode = true);
+//    assert(inDebugMode = true);
 
     return inDebugMode;
   }

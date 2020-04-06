@@ -155,9 +155,7 @@ void main() async {
 //      existingWorkPolicy: ExistingWorkPolicy.replace,
       existingWorkPolicy: ExistingWorkPolicy.replace,
       initialDelay: Duration(minutes: 30),
-      frequency: Duration(minutes: 30));
-
-  await runService();
+      frequency: Duration(minutes: 15));
 
   if (mySetState != null) {
     mySetState(() {
@@ -254,9 +252,8 @@ Future<void> handleSignIn(setState) async {
   }
 }
 
-onNewMessage(DBMessageWithFriend msg) {
+onNewMessage(DBMessageWithFriend msg, String channelName) {
   print("dkjahdnaueghruewrgjew new message: " + msg.message.content);
-
   if (msg.fromMe) {
     return;
   }
@@ -273,12 +270,20 @@ onNewMessage(DBMessageWithFriend msg) {
   var iOSPlatformChannelSpecifics = IOSNotificationDetails();
   var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
   flutterLocalNotificationsPlugin.show(
-      0, 'New Message', '${msg?.friend?.name ?? "unknown"}: ${msg.message.content}', platformChannelSpecifics,
-      payload: 'item x');
+      0, 'New Message', generateLastMessageText(msg.friend?.name, msg.message.content), platformChannelSpecifics,
+      payload: jsonEncode({'id': msg.message.channelId, 'name': channelName}));
 }
 
-Future<void> runService() async {
-  RedPandaLightClient.onNewMessage = onNewMessage;
+Future<void> runService([Function myOnNewMessage]) async {
+//  RedPandaLightClient.onNewMessage = RedPandaLightClient.onNewMessage;
+
+  print('run service: ' + myOnNewMessage.toString());
+
+  if (myOnNewMessage != null) {
+    RedPandaLightClient.onNewMessage = myOnNewMessage;
+  } else {
+    RedPandaLightClient.onNewMessage = onNewMessage;
+  }
 
 //  SharedPreferences.setMockInitialValues({}); // set initial values here if desired
 
@@ -369,7 +374,17 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-Future<void> onSelectNotification(String s) {}
+Future<void> onSelectNotification(String payload) async {
+//  int channelId = int.parse(payload);
+//
+//  if (payload != null) {
+//    debugPrint('notification payload: ' + payload);
+//  }
+//  await Navigator.push(
+//    context,
+//    MaterialPageRoute(builder: (context) => SecondScreen(payload)),
+//  );
+}
 
 class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserver {
   String statusText = "Welcome, redpanda is loading...";
@@ -386,9 +401,18 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //    print("shutdown reassemble");
 //    RedPandaLightClient.shutdown();
 //    RedPandaFlutter.start();
+
+//    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+//        'your channel id', 'your channel name', 'your channel description',
+//        importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
+//    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+//    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+//    flutterLocalNotificationsPlugin.show(0, 'New Message', 'asd', platformChannelSpecifics,
+//        payload: jsonEncode({'id': 2, 'name': 'herrgehrg'}));
+
 //    RedPandaFlutter.stop();
     print("path ${(await getApplicationDocumentsDirectory()).path}");
-    runService();
+    runService(this.onNewMessage);
 //    var u = Utils.getCurrentTimeMillis();
 //    for (int i = 0; i < 1000; i++) {
 //      new NodeId.withNewKeyPair();
@@ -409,9 +433,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //    handleSignIn(setState);
     super.initState();
 
-    channelStream = RedPandaLightClient.watchDBChannelEntries();
-
-    RedPandaLightClient.onNewStatus = onNewStatus;
+    startService();
 
     mySetState = setState;
 
@@ -467,32 +489,62 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
       if (progress == 100) {
         lastProgress = progress;
-        flutterLocalNotificationsPlugin.cancelAll();
-
-        var directory = await getApplicationDocumentsDirectory();
-
-        setState(() {
-          statusText = "Downloading complete, verification of update may take long...";
-        });
-
-        print('read bytes');
-        var readFileByte = await FlutterUtils.readFileByte("${directory.path}/android.apk");
-        print('${readFileByte.length}');
-
-        Uint8List data = await compute(verifyUpdate, readFileByte);
-
-        if (data != null) {
-          print('verified!!!');
-
-          await FlutterUtils.writeFileBytes("${directory.path}/android.apk", data);
-          await OpenFile.open("${directory.path}/android.apk");
-        }
+        await processUpdate();
       }
 
       lastProgress = progress;
     });
 
     FlutterDownloader.registerCallback(downloadCallback);
+  }
+
+  /**
+   * returns true if the processing of an update was successful
+   */
+  Future<bool> processUpdate() async {
+    var directory = await getApplicationDocumentsDirectory();
+
+    /**
+     * Lets check if there exists a android.apk.signed file
+     */
+
+    File signedFile = new File("${directory.path}/android.apk.signed");
+    bool exists = await signedFile.exists();
+
+    if (!exists) {
+      return false;
+    }
+
+    flutterLocalNotificationsPlugin.cancelAll();
+
+    setState(() {
+      statusText = "Downloading complete, verification of update may take long...";
+    });
+
+    print('read bytes');
+    var readFileByte = await FlutterUtils.readFileByte("${directory.path}/android.apk.signed");
+
+    print('${readFileByte.length}');
+
+    Uint8List data = await compute(verifyUpdate, readFileByte);
+
+    if (data != null) {
+      print('verified!!!');
+
+      /**
+       * lets remove the signed file such that we do not process the file again
+       */
+      await signedFile.delete();
+
+      /**
+       * lets write out the bytes and start an installation process...
+       */
+      await FlutterUtils.writeFileBytes("${directory.path}/android.apk", data);
+      await OpenFile.open("${directory.path}/android.apk");
+      return true;
+    }
+
+    return false;
   }
 
   void _incrementCounter() {
@@ -739,9 +791,12 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
             ),
             ListTile(
               title: Text('Download Update'),
-              onTap: () {
-                downloadUpdate();
+              onTap: () async {
                 Navigator.pop(context);
+                var processedAlreadyOneUpdate = await processUpdate();
+                if (!processedAlreadyOneUpdate) {
+                  downloadUpdate();
+                }
               },
             ),
           ],
@@ -949,10 +1004,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
         subtitle: Row(
           children: <Widget>[
 //            Icon(Icons.vpn_key, color: Colors.yellowAccent),
-            Text(
-                (snapshot.data[index].lastMessage_user ?? "unknown") +
-                    ": " +
-                    (snapshot.data[index].lastMessage_text ?? "unknown"),
+            Text(generateLastMessageText(snapshot.data[index].lastMessage_user, snapshot.data[index].lastMessage_text),
                 style: TextStyle(color: Colors.white))
           ],
         ),
@@ -1083,10 +1135,17 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     );
   }
 
-  void chatOnTap(AsyncSnapshot<List<DBChannel>> snapshot, int index) {
+  void chatOnTap(AsyncSnapshot<List<DBChannel>> snapshot, int index) async {
     DBChannel channel = snapshot.data[index];
 
-    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatView(channel.id, channel)));
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatView(channel.id, channel: channel)));
+
+    print('back on main page');
+    /**
+     * Lets reader the onNewMessage listener and lets refresh the channel list.
+     */
+    await runService(this.onNewMessage);
+    refreshChannels();
 
 //    RedPandaLightClient.removeChannel(snapshot.data[index].id);
 //    showDialog(
@@ -1135,16 +1194,20 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //        RedPandaLightClient.shutdown();
 //      });
     } else if (state == AppLifecycleState.resumed) {
+      var notificationAppLaunchDetails = flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+
+      notificationAppLaunchDetails.then((value) {
+        print('obtaiend notificationAppLaunchDetails... ${value.payload} ${value.didNotificationLaunchApp}');
+      });
+
       if (shutdownTimer != null) {
         shutdownTimer.cancel();
       }
 
-      runService();
+      runService(this.onNewMessage);
       flutterLocalNotificationsPlugin.cancelAll();
       new Timer(Duration(seconds: 1), () {
-        setState(() {
-          channelStream = RedPandaLightClient.watchDBChannelEntries();
-        });
+        refreshChannels();
       });
     }
 
@@ -1202,7 +1265,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   void downloadUpdate() async {
     var directory = await getApplicationDocumentsDirectory();
     await FlutterDownloader.enqueue(
-      url: 'http://redpanda.im:8081/android.apk',
+      url: 'http://redpanda.im:8081/android.apk.signed',
       savedDir: directory.path,
       showNotification: true, // show download progress in status bar (for Android)
       openFileFromNotification: true, // click on notification to open downloaded file (for Android)
@@ -1275,5 +1338,100 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     } else {
       return null;
     }
+  }
+
+  void refreshChannels() async {
+    print('########################### refreshing channels...');
+
+    var watchDBChannelEntries = RedPandaLightClient.watchDBChannelEntries();
+
+    /**
+     * lets wait for the first channels to update our channelStream for the view generation
+     */
+    print('########################### waiting for channels...');
+    await watchDBChannelEntries.asBroadcastStream().first;
+    print('########################### channels rdy...');
+
+    setState(() {
+      channelStream = RedPandaLightClient.watchDBChannelEntries();
+    });
+  }
+
+  onNewMessage(DBMessageWithFriend msg, String channelName) {
+    print("dkjahdnaueghruewrgjew new message 2: " + msg.message.content);
+
+    refreshChannels();
+
+    if (msg.fromMe) {
+      return;
+    }
+
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'your channel id', 'your channel name', 'your channel description',
+        importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    flutterLocalNotificationsPlugin.show(
+        0, 'New Message', generateLastMessageText(msg.friend?.name, msg.message.content), platformChannelSpecifics,
+        payload: jsonEncode({'id': msg.message.channelId, 'name': channelName}));
+
+    /**
+     * we do not need a notification here since this onNewMessage method is only called if the mainview is present...
+     * todo: oninactive: set old onNewMessage
+     */
+  }
+
+  void startService() async {
+    await runService(this.onNewMessage);
+
+    channelStream = RedPandaLightClient.watchDBChannelEntries();
+
+    RedPandaLightClient.onNewStatus = onNewStatus;
+
+    var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+    var initializationSettingsIOS = IOSInitializationSettings();
+    var initializationSettings = InitializationSettings(initializationSettingsAndroid, initializationSettingsIOS);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: this.onSelectNotification);
+
+    print('flutterLocalNotificationsPlugin initialize');
+  }
+
+  Future<void> onSelectNotification(String payload) async {
+    print('onSelectNotification');
+    var decoded = jsonDecode(payload);
+
+    print(payload);
+
+    int channelId = decoded['id'];
+    String channelName = decoded['name'];
+
+    if (payload != null) {
+      debugPrint('notification payload: ' + payload);
+    }
+    print('opening channel with name: $channelName');
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ChatView(channelId, channelName: channelName)),
+    );
+  }
+}
+
+String generateLastMessageText(String username, String text) {
+  String out;
+  if (text == null) {
+    return '...';
+  }
+  if (text.length > 10) {
+    out = text.substring(0, 10) + "...";
+  } else {
+    out = text;
+  }
+
+  if (username == null) {
+    return "?: " + out;
+  } else if (username.isEmpty) {
+    return out;
+  } else {
+    return username + ": " + out;
   }
 }
