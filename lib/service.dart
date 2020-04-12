@@ -16,6 +16,7 @@ class Service {
     // in production. Therefore, this code only sets `inDebugMode` to true
     // in a development environment.
 //    assert(inDebugMode = true);
+    //todo currently deactivated...
 
     return inDebugMode;
   }

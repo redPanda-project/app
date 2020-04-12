@@ -6,6 +6,7 @@ import io.flutter.plugin.common.PluginRegistry.PluginRegistrantCallback;
 import io.flutter.plugins.GeneratedPluginRegistrant;
 import io.flutter.plugins.firebasemessaging.FlutterFirebaseMessagingService;
 import io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin;
+import io.flutter.plugins.firebase.firebaseremoteconfig.FirebaseRemoteConfigPlugin;
 
 import io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin;
 
@@ -45,6 +46,8 @@ public class Application extends FlutterApplication implements PluginRegistrantC
         SharedPreferencesPlugin.registerWith(registry.registrarFor("io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin"));
 
         FlutterLocalNotificationsPlugin.registerWith(registry.registrarFor("com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin"));
+
+        FirebaseRemoteConfigPlugin.registerWith(registry.registrarFor("io.flutter.plugins.firebaseremoteconfig.FirebaseRemoteConfigPlugin"));
 
     }
 }

@@ -40,9 +40,11 @@ isolateBootUpCallBackFunction(SendPort sendPort) {
           sendPort.send(IsolateCommand.PING);
         }, onError: (error, stackTrace) {
           print("isolate is not running in the same process as the caller!");
+          print(error);
         });
       } on Exception catch (e) {
         print("isolate is not running in the same process as the caller!");
+        print(e);
       }
       return;
     }
@@ -81,8 +83,7 @@ class RedPandaFlutterIsolate {
     if (lookupPortByName == null) {
       print("spawning....");
 
-      var startCheckPort = new ReceivePort();
-      await Isolate.spawn(isolateBootUpCallBackFunction, startCheckPort.sendPort);
+      ReceivePort startCheckPort = await spawnIsolate();
       await startCheckPort.first;
     } else {
       print("isolate already running...");
@@ -103,18 +104,31 @@ class RedPandaFlutterIsolate {
           print("no answer from isolate stoping...");
           RedPandaFlutter.stop();
           print("stoped isolate restarting...");
-          var startCheckPort = new ReceivePort();
-          await Isolate.spawn(isolateBootUpCallBackFunction, startCheckPort.sendPort);
+          ReceivePort startCheckPort = await spawnIsolate();
           await startCheckPort.first;
         }
       } on Exception catch (e) {
         print(e);
         print(e.runtimeType);
         RedPandaFlutter.stop();
-        var startCheckPort = new ReceivePort();
-        await Isolate.spawn(isolateBootUpCallBackFunction, startCheckPort.sendPort);
+        ReceivePort startCheckPort = await spawnIsolate();
         await startCheckPort.first;
       }
     }
+  }
+
+  static Future<ReceivePort> spawnIsolate() async {
+    ReceivePort startCheckPort = new ReceivePort();
+    Isolate newIsolate = await Isolate.spawn(isolateBootUpCallBackFunction, startCheckPort.sendPort);
+    ReceivePort errorPort = ReceivePort();
+    newIsolate.addErrorListener(errorPort.sendPort);
+    errorPort.listen((listMessage) {
+      String errorDescription = listMessage[0];
+      String stackDescription = listMessage[1];
+      ConnectionService.sentry.captureException(exception: errorDescription, stackTrace: stackDescription);
+      print(errorDescription);
+      print(stackDescription);
+    });
+    return startCheckPort;
   }
 }

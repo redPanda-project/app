@@ -6,6 +6,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:barcode_scan/barcode_scan.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:buffer/buffer.dart';
@@ -36,6 +37,8 @@ import 'package:redpanda_light_client/export.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:workmanager/workmanager.dart';
 
+int myVersion = 2;
+
 bool serviceCompletelyStarted = false;
 
 Function mySetState;
@@ -47,6 +50,7 @@ GoogleSignIn googleSignIn = GoogleSignIn(
 );
 final FirebaseAuth _auth = FirebaseAuth.instance;
 GoogleSignInAccount googleSignInAccount;
+RemoteConfig remoteConfig;
 String name = "unknown";
 
 FirebaseUser user;
@@ -102,7 +106,22 @@ void callbackDispatcher() {
   Workmanager.executeTask((task, inputData) async {
     print("Native called background task: $task"); //simpleTask will be emitted here.
 
-    await runService();
+    RemoteConfig remoteConfig = await RemoteConfig.instance;
+    final defaults = <String, dynamic>{'version_critical': '0'};
+    await remoteConfig.setDefaults(defaults);
+
+    await remoteConfig.fetch(expiration: const Duration(minutes: 1));
+    await remoteConfig.activateFetched();
+    var remoteVersion = int.parse(remoteConfig.getString('version_critical'));
+    print('version_critical: $remoteVersion');
+
+    if (remoteVersion > myVersion) {
+      print("background job not starting critical update available!");
+      return true;
+    } else {
+      await runService();
+      return new Future.delayed(const Duration(seconds: 30), shutdownNow);
+    }
 
 //    const oneSec = const Duration(seconds: 20);
 //    new Timer(oneSec, () => RedPandaLightClient.shutdown());
@@ -110,7 +129,7 @@ void callbackDispatcher() {
 //
 
 //    print("from worker22!");
-    return new Future.delayed(const Duration(seconds: 30), shutdownNow);
+
 //    return;
   });
 }
@@ -124,6 +143,7 @@ bool shutdownNow() {
 void main() async {
   // This captures errors reported by the Flutter framework.
   FlutterError.onError = (FlutterErrorDetails details) {
+    print('obtained flutter error...');
     if (Service.isInDebugMode) {
       // In development mode, simply print to console.
       FlutterError.dumpErrorToConsole(details);
@@ -138,6 +158,8 @@ void main() async {
   await flutterLocalNotificationsPlugin.cancelAll();
 
   await FlutterDownloader.initialize();
+
+  remoteConfig = await RemoteConfig.instance;
 
   await Workmanager.initialize(callbackDispatcher,
       // The top level function, aka callbackDispatcher
@@ -155,7 +177,7 @@ void main() async {
 //      existingWorkPolicy: ExistingWorkPolicy.replace,
       existingWorkPolicy: ExistingWorkPolicy.replace,
       initialDelay: Duration(minutes: 30),
-      frequency: Duration(minutes: 15));
+      frequency: Duration(minutes: 60));
 
   if (mySetState != null) {
     mySetState(() {
@@ -173,10 +195,9 @@ void main() async {
 
 //  Service.sentry.captureException(exception: new Exception("test message"));
 
-//  runApp(MyApp());
-  runZoned<Future<void>>(() async {
+  runZonedGuarded(() {
     runApp(MyApp());
-  }, onError: (error, stackTrace) {
+  }, (error, stackTrace) {
     // Whenever an error occurs, call the `_reportError` function. This sends
     // Dart errors to the dev console or Sentry depending on the environment.
     Service.reportError(error, stackTrace);
@@ -410,7 +431,9 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //    flutterLocalNotificationsPlugin.show(0, 'New Message', 'asd', platformChannelSpecifics,
 //        payload: jsonEncode({'id': 2, 'name': 'herrgehrg'}));
 
-//    RedPandaFlutter.stop();
+    await RedPandaFlutter.stop();
+//    runService();
+
     print("path ${(await getApplicationDocumentsDirectory()).path}");
     runService(this.onNewMessage);
 //    var u = Utils.getCurrentTimeMillis();
@@ -635,28 +658,28 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
         actions: <Widget>[
-          new IconButton(
-            icon: Icon(
-              Icons.settings,
-              color: Colors.white,
-              size: 40,
-            ),
-            onPressed: () => {
-              Fluttertoast.showToast(
-                  msg: "This is Center Short Toast",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  timeInSecForIos: 1,
-                  backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
-                  textColor: Colors.white,
-                  fontSize: 16.0),
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Preferences(googleSignIn)),
-              )
-            },
-            padding: EdgeInsets.only(right: 30),
-          )
+//          new IconButton(
+//            icon: Icon(
+//              Icons.settings,
+//              color: Colors.white,
+//              size: 40,
+//            ),
+//            onPressed: () => {
+//              Fluttertoast.showToast(
+//                  msg: "This is Center Short Toast",
+//                  toastLength: Toast.LENGTH_SHORT,
+//                  gravity: ToastGravity.BOTTOM,
+//                  timeInSecForIos: 1,
+//                  backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
+//                  textColor: Colors.white,
+//                  fontSize: 16.0),
+//              Navigator.push(
+//                context,
+//                MaterialPageRoute(builder: (context) => Preferences(googleSignIn)),
+//              )
+//            },
+//            padding: EdgeInsets.only(right: 30),
+//          )
         ],
       ),
       body: makeBody(context),
@@ -762,7 +785,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: new Text("New Channel"),
+                      title: new Text("New Name"),
                       content: SingleChildScrollView(
                         child: ListBody(
                           children: <Widget>[textField],
@@ -780,7 +803,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                           child: new Text("set"),
                           onPressed: () {
                             Navigator.of(context).pop();
-                            RedPandaLightClient.setName(textValue.trim());
+                            RedPandaLightClient.setName(textValue?.trim() ?? '');
                           },
                         ),
                       ],
@@ -921,7 +944,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //  }
 
   Widget makeCard2(BuildContext context, AsyncSnapshot<List<DBChannel>> snapshot, int index) {
-    print('snapshot len: ' + snapshot.data.length.toString());
+//    print('snapshot len: ' + snapshot.data.length.toString());
 
     return Card(
       elevation: 1.0,
@@ -1189,10 +1212,10 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     statusText = "reloading... " + RedPandaLightClient.running.toString();
     if (state == AppLifecycleState.inactive) {
 //      RedPandaLightClient.shutdown();
-//      const timeRepeatConectionMaintain = Duration(minutes: 10);
-//      shutdownTimer = new Timer(timeRepeatConectionMaintain, () {
-//        RedPandaLightClient.shutdown();
-//      });
+      const timeRepeatConectionMaintain = Duration(minutes: 2);
+      shutdownTimer = new Timer(timeRepeatConectionMaintain, () {
+        RedPandaLightClient.shutdown();
+      });
     } else if (state == AppLifecycleState.resumed) {
       var notificationAppLaunchDetails = flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
@@ -1209,6 +1232,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       new Timer(Duration(seconds: 1), () {
         refreshChannels();
       });
+
+      checkForCriticalUpdate();
     }
 
     print('new app state: ' + state.toString());
@@ -1394,6 +1419,55 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: this.onSelectNotification);
 
     print('flutterLocalNotificationsPlugin initialize');
+
+    await checkForCriticalUpdate();
+  }
+
+  //check for critical update and stop if one is available
+  Future checkForCriticalUpdate() async {
+    //check for critical update and stop if one is available
+    final defaults = <String, dynamic>{'version_critical': '0'};
+    await remoteConfig.setDefaults(defaults);
+
+    await remoteConfig.fetch(expiration: const Duration(minutes: 1));
+    await remoteConfig.activateFetched();
+    var remoteVersion = int.parse(remoteConfig.getString('version_critical'));
+    print('version_critical: $remoteVersion');
+
+    if (remoteVersion > myVersion) {
+      new Timer.periodic(Duration(seconds: 2), (timer) {
+        setState(() {
+          statusText = "Critical update available, please update as soon as possible...";
+        });
+        RedPandaFlutter.stop();
+      });
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          // return object of type Dialog
+          return AlertDialog(
+            title: new Text("Critical Update Available!"),
+            content: new Text("Critical update available, please update as soon as possible!"),
+            actions: <Widget>[
+              // usually buttons at the bottom of the dialog
+              new FlatButton(
+                child: new Text("Close"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              new FlatButton(
+                child: new Text("Update"),
+                onPressed: () {
+                  downloadUpdate();
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   Future<void> onSelectNotification(String payload) async {
