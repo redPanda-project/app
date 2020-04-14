@@ -59,6 +59,7 @@ dependencies:
   flutter_downloader: ^1.4.1
   open_file: ^3.0.1
   firebase_remote_config: ^0.3.0+3
+  audioplayers: ^0.15.0
 
 
 flutter_icons:
@@ -85,6 +86,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - images/icon.png
+    - assets/inChatNotification.mp3
   #  - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

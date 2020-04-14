@@ -29,15 +29,20 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:audioplayers/audio_cache.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart' show formatDate, HH, nn, ss, dd, mm, yy, yyyy;
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:redpanda/activities/const.dart';
 import 'package:redpanda/main.dart';
 import 'package:redpanda_light_client/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 class ChatView extends StatelessWidget {
   final int channelId;
@@ -75,6 +80,9 @@ class ChatScreen extends StatefulWidget {
 class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserver {
   ChatScreenState(this.channelId, this.channel);
 
+  static final player = AudioCache();
+  var oldOnNewMessageListener;
+
   final int channelId;
   DBChannel channel;
 
@@ -107,12 +115,17 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
     isLoading = false;
     isShowSticker = false;
 
+    messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
+
     readLocal();
+    oldOnNewMessageListener = RedPandaLightClient.onNewMessage;
+    RedPandaLightClient.onNewMessage = onNewMessage;
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    RedPandaLightClient.onNewMessage = oldOnNewMessageListener;
     super.dispose();
   }
 
@@ -147,6 +160,24 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
       messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);
       channel = channelById;
     });
+
+    flutterLocalNotificationsPlugin.cancel(channelId);
+  }
+
+  onNewMessage(DBMessageWithFriend msg, String channelName) {
+    print("dkjahdnaueghruewrgjew new message: " + msg.message.content);
+
+    if (msg.message.channelId != channelId) {
+      print("redirecting onNewMessage to old method since it is not for our channel...");
+      oldOnNewMessageListener(msg, channelName);
+      return;
+    }
+
+    if (msg.fromMe) {
+      return;
+    }
+
+    player.play("inChatNotification.mp3");
   }
 
   Future getImage() async {
@@ -219,6 +250,7 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
   }
 
   Widget buildItem(int index, DBMessageWithFriend message) {
+//    print('${message.friend?.name}: ${message.message.content}');
     if (message.fromMe) {
       // Right (my message)
 
@@ -783,8 +815,10 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
+      RedPandaLightClient.onNewMessage = oldOnNewMessageListener;
     } else if (state == AppLifecycleState.resumed) {
-      new Timer(Duration(seconds: 2), () {
+      RedPandaLightClient.onNewMessage = onNewMessage;
+      new Timer(Duration(seconds: 1), () {
         readLocal();
 //        setState(() {
 //          messageStream = RedPandaLightClient.watchDBMessageEntries(channelId);

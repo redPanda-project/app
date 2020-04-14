@@ -37,7 +37,7 @@ import 'package:redpanda_light_client/export.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:workmanager/workmanager.dart';
 
-int myVersion = 2;
+int myVersion = 3;
 
 bool serviceCompletelyStarted = false;
 
@@ -81,6 +81,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
     var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
     flutterLocalNotificationsPlugin.show(0, 'New Message', 'unknown ${data['data']}', platformChannelSpecifics,
         payload: 'item x');
+
     print(data.runtimeType);
     print(data);
   }
@@ -155,7 +156,7 @@ void main() async {
   };
 
   WidgetsFlutterBinding.ensureInitialized();
-  await flutterLocalNotificationsPlugin.cancelAll();
+//  await flutterLocalNotificationsPlugin.cancelAll();
 
   await FlutterDownloader.initialize();
 
@@ -279,6 +280,8 @@ onNewMessage(DBMessageWithFriend msg, String channelName) {
     return;
   }
 
+  var channelId = msg.message.channelId;
+
   // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
   var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
   var initializationSettingsIOS = IOSInitializationSettings();
@@ -286,16 +289,16 @@ onNewMessage(DBMessageWithFriend msg, String channelName) {
   flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
 
   var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'your channel id', 'your channel name', 'your channel description',
+      'messages$channelName', 'Messages: $channelName', 'Notification channel for new messages for $channelName',
       importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
   var iOSPlatformChannelSpecifics = IOSNotificationDetails();
   var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
-  flutterLocalNotificationsPlugin.show(
-      0, 'New Message', generateLastMessageText(msg.friend?.name, msg.message.content), platformChannelSpecifics,
+  flutterLocalNotificationsPlugin.show(channelId, '$channelName',
+      generateLastMessageText(msg.friend?.name, msg.message.content, true), platformChannelSpecifics,
       payload: jsonEncode({'id': msg.message.channelId, 'name': channelName}));
 }
 
-Future<void> runService([Function myOnNewMessage]) async {
+Future<Stream<List<DBChannel>>> runService([Function myOnNewMessage, bool returnStream]) async {
 //  RedPandaLightClient.onNewMessage = RedPandaLightClient.onNewMessage;
 
   print('run service: ' + myOnNewMessage.toString());
@@ -347,7 +350,10 @@ Future<void> runService([Function myOnNewMessage]) async {
 //  service.start();
 
 //  await RedPandaLightClient.init(dataFolderPath, port);
-  await RedPandaFlutter.start(dataFolderPath, port);
+
+  var stream = await RedPandaFlutter.start(dataFolderPath, port);
+  print('obtained stream: $stream');
+  return stream;
 }
 
 class MyApp extends StatelessWidget {
@@ -431,11 +437,12 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //    flutterLocalNotificationsPlugin.show(0, 'New Message', 'asd', platformChannelSpecifics,
 //        payload: jsonEncode({'id': 2, 'name': 'herrgehrg'}));
 
-    await RedPandaFlutter.stop();
+//    await RedPandaFlutter.stop();
 //    runService();
 
     print("path ${(await getApplicationDocumentsDirectory()).path}");
-    runService(this.onNewMessage);
+    print("path ${(await getApplicationDocumentsDirectory()).path}");
+//    runService(this.onNewMessage);
 //    var u = Utils.getCurrentTimeMillis();
 //    for (int i = 0; i < 1000; i++) {
 //      new NodeId.withNewKeyPair();
@@ -466,9 +473,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       _firebaseMessaging.requestNotificationPermissions();
 
       _firebaseMessaging.getToken().then((token) {
-        print('token: ' + token.toString());
-        //todo appDatabase
-//        ConnectionService.appDatabase.insertFCMToken(token);
+        print('FCM token: ' + token.toString());
+        RedPandaLightClient.insertFCMToken(token);
       });
 
       _firebaseMessaging.configure(
@@ -538,7 +544,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       return false;
     }
 
-    flutterLocalNotificationsPlugin.cancelAll();
+//    flutterLocalNotificationsPlugin.cancelAll();
 
     setState(() {
       statusText = "Downloading complete, verification of update may take long...";
@@ -558,6 +564,11 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
        * lets remove the signed file such that we do not process the file again
        */
       await signedFile.delete();
+
+      final tasks = await FlutterDownloader.loadTasks();
+      for (var task in tasks) {
+        FlutterDownloader.remove(taskId: task.taskId);
+      }
 
       /**
        * lets write out the bytes and start an installation process...
@@ -717,7 +728,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                       actions: <Widget>[
                         // usually buttons at the bottom of the dialog
                         new FlatButton(
-                          child: new Text("cancle"),
+                          child: new Text("cancel"),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
@@ -752,7 +763,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                       actions: <Widget>[
                         // usually buttons at the bottom of the dialog
                         new FlatButton(
-                          child: new Text("cancle"),
+                          child: new Text("cancel"),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
@@ -794,7 +805,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                       actions: <Widget>[
                         // usually buttons at the bottom of the dialog
                         new FlatButton(
-                          child: new Text("cancle"),
+                          child: new Text("cancel"),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
@@ -1130,7 +1141,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
             new FlatButton(
-              child: new Text("cancle"),
+              child: new Text("cancel"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -1165,10 +1176,10 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
     print('back on main page');
     /**
-     * Lets reader the onNewMessage listener and lets refresh the channel list.
+     * Lets reset the onNewMessage listener and lets refresh the channel list.
      */
     await runService(this.onNewMessage);
-    refreshChannels();
+//    refreshChannels();
 
 //    RedPandaLightClient.removeChannel(snapshot.data[index].id);
 //    showDialog(
@@ -1228,7 +1239,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       }
 
       runService(this.onNewMessage);
-      flutterLocalNotificationsPlugin.cancelAll();
+//      flutterLocalNotificationsPlugin.cancelAll();
       new Timer(Duration(seconds: 1), () {
         refreshChannels();
       });
@@ -1385,6 +1396,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   onNewMessage(DBMessageWithFriend msg, String channelName) {
     print("dkjahdnaueghruewrgjew new message 2: " + msg.message.content);
 
+    var channelId = msg.message.channelId;
+
     refreshChannels();
 
     if (msg.fromMe) {
@@ -1392,24 +1405,30 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     }
 
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-        'your channel id', 'your channel name', 'your channel description',
+        'messages$channelName', 'Messages: $channelName', 'Notification channel for new messages for $channelName',
         importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
     var iOSPlatformChannelSpecifics = IOSNotificationDetails();
     var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
-    flutterLocalNotificationsPlugin.show(
-        0, 'New Message', generateLastMessageText(msg.friend?.name, msg.message.content), platformChannelSpecifics,
+    flutterLocalNotificationsPlugin.show(channelId, '$channelName',
+        generateLastMessageText(msg.friend?.name, msg.message.content, true), platformChannelSpecifics,
         payload: jsonEncode({'id': msg.message.channelId, 'name': channelName}));
 
     /**
      * we do not need a notification here since this onNewMessage method is only called if the mainview is present...
-     * todo: oninactive: set old onNewMessage
+     * todo: oninactive: set old onNewMessage, its not clear if we want to show notifications if the mainview is present or not
+     * todo: with the current implementation it is okay to show notification if mainview is not present, the chatview will
+     * overwrite the onNewMessage as long as the ChatView is active
      */
   }
 
   void startService() async {
-    await runService(this.onNewMessage);
+    var stream = (await runService(this.onNewMessage)).asBroadcastStream();
+    setState(() {
+      channelStream = stream;
+    });
 
-    channelStream = RedPandaLightClient.watchDBChannelEntries();
+//    channelStream = RedPandaLightClient.watchDBChannelEntries();
+//    refreshChannels();
 
     RedPandaLightClient.onNewStatus = onNewStatus;
 
@@ -1421,6 +1440,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     print('flutterLocalNotificationsPlugin initialize');
 
     await checkForCriticalUpdate();
+    // lets wait for the first channel such that the RedPandaLightClient is fully initialized...
+    await stream.first;
   }
 
   //check for critical update and stop if one is available
@@ -1490,12 +1511,12 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   }
 }
 
-String generateLastMessageText(String username, String text) {
+String generateLastMessageText(String username, String text, [bool long = false]) {
   String out;
   if (text == null) {
     return '...';
   }
-  if (text.length > 10) {
+  if (text.length > 10 && !long) {
     out = text.substring(0, 10) + "...";
   } else {
     out = text;

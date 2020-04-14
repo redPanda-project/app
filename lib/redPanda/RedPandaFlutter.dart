@@ -17,7 +17,7 @@ class RedPandaFlutter {
     IsolateNameServer.removePortNameMapping(RedPandaFlutterIsolate.LOOKUPNAME);
   }
 
-  static start(String dataFolderPath, int myPort) async {
+  static Future<Stream<List<DBChannel>>> start(String dataFolderPath, int myPort) async {
 //    stop();
     /**
      * Lets try to start the Isolate which handles all redpanda functions.
@@ -35,7 +35,9 @@ class RedPandaFlutter {
     sendPort = await handshakePort.first;
     print("sucessfully registered to isolate");
 
-    RedPandaLightClient.initWithSendPort(dataFolderPath, myPort, sendPort);
+    print("sucessfully registered to isolate");
+    Stream<List<DBChannel>> allChannels = RedPandaLightClient.initWithSendPort(dataFolderPath, myPort, sendPort);
+    print("sucessfully initWithSendPort");
+    return allChannels;
   }
-
 }
