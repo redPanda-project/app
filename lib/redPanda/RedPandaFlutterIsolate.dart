@@ -97,7 +97,7 @@ class RedPandaFlutterIsolate {
         lookupPortByName.send([startCheckPort.sendPort]);
         print("send");
 
-        final result = await Future.any([startCheckPort.first, Future.delayed(const Duration(seconds: 3))]);
+        final result = await Future.any([startCheckPort.first, Future.delayed(const Duration(milliseconds: 500))]);
 
         print("result: " + result.toString() + " " + result.runtimeType.toString());
         if (result == null) {

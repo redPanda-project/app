@@ -1,12 +1,25 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:redpanda/main.dart';
 import 'package:redpanda_light_client/export.dart';
 
 void main() {
+
+
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    // expose path_provider
+    const MethodChannel channel = MethodChannel('plugins.flutter.io/path_provider');
+    channel.setMockMethodCallHandler((MethodCall methodCall) async {
+      return ".";
+    });
+  });
+
   testWidgets('Test Channels from DB present', (WidgetTester tester) async {
     //path framework not available on linux or windows, use default test folder
     // this is ./test/ db file will be created there from the lib

@@ -28,12 +28,12 @@ void main() {
 
       expect(find.byIcon(Icons.add), findsOneWidget);
 
-      // Tap the '+' icon and trigger a frame.
+
       await tester.tap(find.byIcon(Icons.add));
       await tester.pump();
 
-      // Verify that our counter has incremented.
-      expect(find.text('Test1'), findsWidgets);
+
+      expect(find.text('Test1'), findsNothing);
       expect(find.text('1'), findsNothing);
 
       RedPandaLightClient.shutdown();

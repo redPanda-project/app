@@ -2,42 +2,34 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:math';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:barcode_scan/barcode_scan.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:buffer/buffer.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:preferences/preference_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:redpanda/activities/ChatView.dart';
-import 'package:redpanda/activities/preferences.dart';
 import 'package:redpanda/redPanda/FlutterUtils.dart';
 import 'package:redpanda/redPanda/RedPandaFlutter.dart';
 import 'package:redpanda/service.dart';
-import 'dart:ui' as ui;
-import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
-
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
-import 'package:path_provider/path_provider.dart';
-
 import 'package:redpanda_light_client/export.dart';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
-int myVersion = 3;
+int myVersion = 4;
 
 bool serviceCompletelyStarted = false;
 
@@ -482,7 +474,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
           print("onMessage: $message");
 //      _showItemDialog(message);
         },
-        onBackgroundMessage: myBackgroundMessageHandler,
+//        onBackgroundMessage: myBackgroundMessageHandler,
         onLaunch: (Map<String, dynamic> message) async {
           print("onLaunch: $message");
 //      _navigateToItemDetail(message);
@@ -524,7 +516,11 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       lastProgress = progress;
     });
 
-    FlutterDownloader.registerCallback(downloadCallback);
+    runZonedGuarded(() {
+      FlutterDownloader.registerCallback(downloadCallback);
+    }, (obj, stacktrace) {
+      print('error registerCallback for FlutterDownloader');
+    });
   }
 
   /**
