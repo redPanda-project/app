@@ -462,9 +462,11 @@ packages:
   redpanda_light_client:
     dependency: "direct main"
     description:
-      path: "../redpanda_light_client"
-      relative: true
-    source: path
+      path: "."
+      ref: dev
+      resolved-ref: "04e355398c744e9b102f6161b6d3778db496921b"
+      url: "https://github.com/redPanda-project/redpanda_light_client.git"
+    source: git
     version: "0.0.1"
   sentry:
     dependency: "direct main"
