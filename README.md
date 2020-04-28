@@ -5,6 +5,8 @@ The Flutter app is at the beginning of its development, the server application w
 
 Todo list can be found here: [Dev Plans](https://github.com/redPanda-project/app/projects/1)
 
+The logic for the light client is seperated from the app code and can be found here:
+[redPanda-project/redpanda_light_client](https://github.com/redPanda-project/redpanda_light_client)
 
 License (todo):
 notification sound: https://notificationsounds.com/message-tones/filling-your-inbox-251 CC 4.0
