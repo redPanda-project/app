@@ -5,6 +5,9 @@ pipeline {
             args '-u root -v androidSDKvol:/opt/android-sdk-linux/ -v androidDir:/root/.android/ -v flutterCache:/root/.pub-cache'
         }
     }
+    triggers {
+        cron('@midnight')
+    }
     stages {
         stage ('Flutter Doctor') {
             steps {
