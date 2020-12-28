@@ -1505,6 +1505,12 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       MaterialPageRoute(builder: (context) => ChatView(channelId, channelName: channelName)),
     );
   }
+
+  @override
+  Future<bool> didPushRouteInformation(RouteInformation routeInformation) {
+    // TODO: implement didPushRouteInformation
+    throw UnimplementedError();
+  }
 }
 
 String generateLastMessageText(String username, String text, [bool long = false]) {

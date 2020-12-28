@@ -864,4 +864,10 @@ class ChatScreenState extends State<ChatScreen> implements WidgetsBindingObserve
     // TODO: implement didPushRoute
     return null;
   }
+
+  @override
+  Future<bool> didPushRouteInformation(RouteInformation routeInformation) {
+    // TODO: implement didPushRouteInformation
+    throw UnimplementedError();
+  }
 }

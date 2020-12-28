@@ -5,7 +5,7 @@ import 'package:sentry/sentry.dart';
 
 class Service {
   static final SentryClient sentry =
-      new SentryClient(dsn: "https://5ab6bb5e18a84fc1934b438139cc13d1@sentry.io/3871436");
+      new SentryClient(new SentryOptions(dsn: "https://5ab6bb5e18a84fc1934b438139cc13d1@sentry.io/3871436"));
 
   // Methods for Sentry
   static bool get isInDebugMode {
@@ -31,7 +31,7 @@ class Service {
     } else {
       // Send the Exception and Stacktrace to Sentry in Production mode.
       Service.sentry.captureException(
-        exception: error,
+        error,
         stackTrace: stackTrace,
       );
     }

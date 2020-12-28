@@ -125,7 +125,7 @@ class RedPandaFlutterIsolate {
     errorPort.listen((listMessage) {
       String errorDescription = listMessage[0];
       String stackDescription = listMessage[1];
-      ConnectionService.sentry.captureException(exception: errorDescription, stackTrace: stackDescription);
+      ConnectionService.sentry.captureException(errorDescription, stackTrace: stackDescription);
       print(errorDescription);
       print(stackDescription);
     });
