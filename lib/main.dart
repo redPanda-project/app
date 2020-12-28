@@ -63,14 +63,16 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
     // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
     var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
     var initializationSettingsIOS = IOSInitializationSettings();
-    var initializationSettings = InitializationSettings(initializationSettingsAndroid, initializationSettingsIOS);
+    var initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
     flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
 
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'your channel id', 'your channel name', 'your channel description',
-        importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
+        importance: Importance.defaultImportance, priority: Priority.defaultPriority, ticker: 'ticker');
     var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    var platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
     flutterLocalNotificationsPlugin.show(0, 'New Message', 'unknown ${data['data']}', platformChannelSpecifics,
         payload: 'item x');
 
@@ -241,7 +243,7 @@ Future<void> handleSignIn(setState) async {
       if (postSnapshot.exists) {
 //        _counter = postSnapshot.data['likesCount'] + 1;
         await tx.update(postRef, <String, dynamic>{
-          'likesCount': postSnapshot.data['likesCount'] + 1,
+          'likesCount': postSnapshot.data()['likesCount'] + 1,
           'lastLogin': DateTime.now().millisecondsSinceEpoch
         });
       } else {
@@ -254,7 +256,7 @@ Future<void> handleSignIn(setState) async {
       querySnapshot.documentChanges.forEach((DocumentChange change) {
         print('change: ' + change.document.data.toString());
         setState(() {
-          _counter = change.document.data['counter'];
+          _counter = change.document.data()['counter'];
         });
         // Do something with change
       });
@@ -277,14 +279,16 @@ onNewMessage(DBMessageWithFriend msg, String channelName) {
   // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
   var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
   var initializationSettingsIOS = IOSInitializationSettings();
-  var initializationSettings = InitializationSettings(initializationSettingsAndroid, initializationSettingsIOS);
+  var initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
   flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
 
   var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'messages$channelName', 'Messages: $channelName', 'Notification channel for new messages for $channelName',
-      importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
+      importance: Importance.defaultImportance, priority: Priority.defaultPriority, ticker: 'ticker');
   var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-  var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+  var platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
   flutterLocalNotificationsPlugin.show(channelId, '$channelName',
       generateLastMessageText(msg.friend?.name, msg.message.content, true), platformChannelSpecifics,
       payload: jsonEncode({'id': msg.message.channelId, 'name': channelName}));
@@ -624,7 +628,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //        setState(() {
 //          _counter = postSnapshot.data['counter'] + 1;
 //        });
-        await tx.update(postRef, <String, dynamic>{'counter': postSnapshot.data['counter'] + 1});
+        await tx.update(postRef, <String, dynamic>{'counter': postSnapshot.data()['counter'] + 1});
       } else {
         await tx.set(postRef, <String, dynamic>{'counter': 0});
       }
@@ -1109,7 +1113,6 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
                 msg: "Channel copied to clipboard.",
                 toastLength: Toast.LENGTH_SHORT,
                 gravity: ToastGravity.BOTTOM,
-                timeInSecForIos: 1,
                 backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
                 textColor: Colors.white,
                 fontSize: 16.0);
@@ -1402,9 +1405,10 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'messages$channelName', 'Messages: $channelName', 'Notification channel for new messages for $channelName',
-        importance: Importance.Default, priority: Priority.Default, ticker: 'ticker');
+        importance: Importance.defaultImportance, priority: Priority.defaultPriority, ticker: 'ticker');
     var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    var platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
     flutterLocalNotificationsPlugin.show(channelId, '$channelName',
         generateLastMessageText(msg.friend?.name, msg.message.content, true), platformChannelSpecifics,
         payload: jsonEncode({'id': msg.message.channelId, 'name': channelName}));
@@ -1430,7 +1434,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 
     var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
     var initializationSettingsIOS = IOSInitializationSettings();
-    var initializationSettings = InitializationSettings(initializationSettingsAndroid, initializationSettingsIOS);
+    var initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
     flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: this.onSelectNotification);
 
     print('flutterLocalNotificationsPlugin initialize');

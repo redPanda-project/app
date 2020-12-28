@@ -22,10 +22,10 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.2
+  cupertino_icons: ^1.0.0
   buffer: ^1.0.6
   shared_preferences: ^0.5.3+4
-  fluttertoast: ^3.1.3
+  fluttertoast: ^7.1.6
   hex: ^0.1.2
   #  base58check: ^1.0.1
   #  byte_array: ^0.1.6
@@ -33,14 +33,10 @@ dependencies:
   cryptography: ^0.1.2
   google_sign_in: ^4.1.4
   preferences: ^5.1.0
-  #firebase cloud start
-  cloud_firestore:
-    git:
-      url: https://github.com/pY4x3g/flutterfire.git
-      ref: bd4007a28b27fc5838d2849dae6ba875a8b635e2
-      path: packages/cloud_firestore/cloud_firestore
-  #firebase cloud end
-  firebase_auth: ^0.15.5+2
+  cloud_firestore: ^0.14.4
+  firebase_auth: ^0.18.4
+  firebase_messaging: ^7.0.3
+  firebase_remote_config: ^0.4.3
   sentry: ^4.0.1
   sqlite3_flutter_libs:
   redpanda_light_client:
@@ -49,17 +45,16 @@ dependencies:
     #  ref: dev #using dev branch
     path: ../redpanda_light_client
   path_provider: ^1.6.5
-  firebase_messaging:
-  #    path: ../flutterfire/packages/firebase_messaging
+
   workmanager: ^0.2.0
-  flutter_local_notifications: ^1.2.2
+  flutter_local_notifications: ^3.0.2
   qr_flutter: ^3.1.0
   barcode_scan: ^2.0.1
   date_format: ^1.0.8
   #  cached_network_image: ^2.0.0
   flutter_downloader: ^1.4.1
   open_file: ^3.0.1
-  firebase_remote_config: ^0.3.0+3
+
   audioplayers: ^0.15.0
 
 

@@ -70,7 +70,6 @@ class Preferences extends StatelessWidget {
                       msg: "logged out",
                       toastLength: Toast.LENGTH_SHORT,
                       gravity: ToastGravity.BOTTOM,
-                      timeInSecForIos: 1,
                       backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
                       textColor: Colors.white,
                       fontSize: 16.0)
@@ -81,7 +80,6 @@ class Preferences extends StatelessWidget {
                       msg: "logged out",
                       toastLength: Toast.LENGTH_SHORT,
                       gravity: ToastGravity.BOTTOM,
-                      timeInSecForIos: 1,
                       backgroundColor: Color.fromRGBO(87, 99, 107, 1.0),
                       textColor: Colors.white,
                       fontSize: 16.0)
