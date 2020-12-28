@@ -40,10 +40,10 @@ dependencies:
   sentry: ^4.0.1
   sqlite3_flutter_libs:
   redpanda_light_client:
-    #git:
-    #  url: https://github.com/redPanda-project/redpanda_light_client.git
-    #  ref: dev #using dev branch
-    path: ../redpanda_light_client
+    git:
+      url: https://github.com/redPanda-project/redpanda_light_client.git
+      ref: dev #using dev branch
+  #    path: ../redpanda_light_client
   path_provider: ^1.6.5
 
   workmanager: ^0.2.0

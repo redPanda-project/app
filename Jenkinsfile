@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'py4x3g/flutter_lcov_to_cobertura'
+            image 'py4x3g/flutter_lcov_to_cobertura:v0.0.5'
             args '-u root -v androidSDKvol:/opt/android-sdk-linux/ -v androidDir:/root/.android/ -v flutterCache:/root/.pub-cache'
         }
     }
