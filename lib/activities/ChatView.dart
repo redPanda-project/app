@@ -28,7 +28,7 @@
 
 import 'dart:async';
 
-import 'package:audioplayers/audio_cache.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:date_format/date_format.dart' show formatDate, HH, nn, ss, dd, mm, yy, yyyy;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';

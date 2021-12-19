@@ -5,7 +5,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:barcode_scan/barcode_scan.dart';
+import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -45,14 +45,14 @@ GoogleSignInAccount googleSignInAccount;
 RemoteConfig remoteConfig;
 String name = "unknown";
 
-FirebaseUser user;
+// FirebaseUser user;
 String myNick = "unknown";
 
 AppLifecycleState _lastLifecycleState;
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+// final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 bool _isConfigured = false;
 
 Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
@@ -67,8 +67,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
         InitializationSettings(android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
     flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
 
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-        'your channel id', 'your channel name', 'your channel description',
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails('your channel id', 'your channel name',
         importance: Importance.defaultImportance, priority: Priority.defaultPriority, ticker: 'ticker');
     var iOSPlatformChannelSpecifics = IOSNotificationDetails();
     var platformChannelSpecifics =
@@ -98,15 +97,15 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
 }
 
 void callbackDispatcher() {
-  Workmanager.executeTask((task, inputData) async {
+  Workmanager().executeTask((task, inputData) async {
     print("Native called background task: $task"); //simpleTask will be emitted here.
 
     RemoteConfig remoteConfig = await RemoteConfig.instance;
     final defaults = <String, dynamic>{'version_critical': '0'};
     await remoteConfig.setDefaults(defaults);
 
-    await remoteConfig.fetch(expiration: const Duration(minutes: 1));
-    await remoteConfig.activateFetched();
+    // await remoteConfig.fetch(expiration: const Duration(minutes: 1));
+    // await remoteConfig.activateFetched();
     var remoteVersion = int.parse(remoteConfig.getString('version_critical'));
     print('version_critical: $remoteVersion');
 
@@ -156,13 +155,13 @@ void main() async {
 
   remoteConfig = await RemoteConfig.instance;
 
-  await Workmanager.initialize(callbackDispatcher,
+  await Workmanager().initialize(callbackDispatcher,
       // The top level function, aka callbackDispatcher
       isInDebugMode:
           false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
       );
 //  await Workmanager.cancelAll();
-  await Workmanager.registerPeriodicTask("1", "task1",
+  await Workmanager().registerPeriodicTask("1", "task1",
       constraints: Constraints(
           networkType: NetworkType.connected,
           requiresBatteryNotLow: true,
@@ -217,13 +216,13 @@ Future<void> handleSignIn(setState) async {
 
     final GoogleSignInAuthentication googleAuth = await googleSignInAccount.authentication;
 
-    final AuthCredential credential = GoogleAuthProvider.getCredential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
+    // final AuthCredential credential = GoogleAuthProvider.getCredential(
+    //   accessToken: googleAuth.accessToken,
+    //   idToken: googleAuth.idToken,
+    // );
 
-    user = (await _auth.signInWithCredential(credential)).user;
-    print("signed in " + user.displayName);
+    // user = (await _auth.signInWithCredential(credential)).user;
+    // print("signed in " + user.displayName);
 
 //    Firestore.instance
 //        .collection('global')
@@ -237,30 +236,30 @@ Future<void> handleSignIn(setState) async {
 //      }
 //    });
 
-    final DocumentReference postRef = Firestore.instance.collection('users').document(user.uid);
-    Firestore.instance.runTransaction((Transaction tx) async {
-      DocumentSnapshot postSnapshot = await tx.get(postRef);
-      if (postSnapshot.exists) {
-//        _counter = postSnapshot.data['likesCount'] + 1;
-        await tx.update(postRef, <String, dynamic>{
-          'likesCount': postSnapshot.data()['likesCount'] + 1,
-          'lastLogin': DateTime.now().millisecondsSinceEpoch
-        });
-      } else {
-        await tx.set(postRef, <String, dynamic>{'likesCount': 0});
-      }
-    });
-
-    CollectionReference reference = Firestore.instance.collection('global');
-    reference.snapshots().listen((querySnapshot) {
-      querySnapshot.documentChanges.forEach((DocumentChange change) {
-        print('change: ' + change.document.data.toString());
-        setState(() {
-          _counter = change.document.data()['counter'];
-        });
-        // Do something with change
-      });
-    });
+//     final DocumentReference postRef = Firestore.instance.collection('users').document(user.uid);
+//     Firestore.instance.runTransaction((Transaction tx) async {
+//       DocumentSnapshot postSnapshot = await tx.get(postRef);
+//       if (postSnapshot.exists) {
+// //        _counter = postSnapshot.data['likesCount'] + 1;
+//         await tx.update(postRef, <String, dynamic>{
+//           'likesCount': postSnapshot.data()['likesCount'] + 1,
+//           'lastLogin': DateTime.now().millisecondsSinceEpoch
+//         });
+//       } else {
+//         await tx.set(postRef, <String, dynamic>{'likesCount': 0});
+//       }
+//     });
+//
+//     CollectionReference reference = Firestore.instance.collection('global');
+//     reference.snapshots().listen((querySnapshot) {
+//       querySnapshot.documentChanges.forEach((DocumentChange change) {
+//         print('change: ' + change.document.data.toString());
+//         setState(() {
+//           _counter = change.document.data()['counter'];
+//         });
+//         // Do something with change
+//       });
+//     });
 
 //    await _googleSignIn.signOut();
   } catch (error) {
@@ -283,8 +282,7 @@ onNewMessage(DBMessageWithFriend msg, String channelName) {
       InitializationSettings(android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
   flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
 
-  var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'messages$channelName', 'Messages: $channelName', 'Notification channel for new messages for $channelName',
+  var androidPlatformChannelSpecifics = AndroidNotificationDetails('messages$channelName', 'Messages: $channelName',
       importance: Importance.defaultImportance, priority: Priority.defaultPriority, ticker: 'ticker');
   var iOSPlatformChannelSpecifics = IOSNotificationDetails();
   var platformChannelSpecifics =
@@ -466,28 +464,28 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     WidgetsBinding.instance.addObserver(this);
 
     if (!_isConfigured) {
-      _firebaseMessaging.requestNotificationPermissions();
-
-      _firebaseMessaging.getToken().then((token) {
-        print('FCM token: ' + token.toString());
-        RedPandaLightClient.insertFCMToken(token);
-      });
-
-      _firebaseMessaging.configure(
-        onMessage: (Map<String, dynamic> message) async {
-          print("onMessage: $message");
-//      _showItemDialog(message);
-        },
-//        onBackgroundMessage: myBackgroundMessageHandler,
-        onLaunch: (Map<String, dynamic> message) async {
-          print("onLaunch: $message");
-//      _navigateToItemDetail(message);
-        },
-        onResume: (Map<String, dynamic> message) async {
-          print("onResume: $message");
-//      _navigateToItemDetail(message);
-        },
-      );
+//       _firebaseMessaging.requestNotificationPermissions();
+//
+//       _firebaseMessaging.getToken().then((token) {
+//         print('FCM token: ' + token.toString());
+//         RedPandaLightClient.insertFCMToken(token);
+//       });
+//
+//       _firebaseMessaging.configure(
+//         onMessage: (Map<String, dynamic> message) async {
+//           print("onMessage: $message");
+// //      _showItemDialog(message);
+//         },
+// //        onBackgroundMessage: myBackgroundMessageHandler,
+//         onLaunch: (Map<String, dynamic> message) async {
+//           print("onLaunch: $message");
+// //      _navigateToItemDetail(message);
+//         },
+//         onResume: (Map<String, dynamic> message) async {
+//           print("onResume: $message");
+// //      _navigateToItemDetail(message);
+//         },
+//       );
       _isConfigured = true;
     }
 
@@ -582,7 +580,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   }
 
   void _incrementCounter() {
-    if (user != null) {
+    // if (user != null) {
 //      final DocumentReference postRef =
 //          Firestore.instance.collection('users').document(user.uid);
 //      Firestore.instance.runTransaction((Transaction tx) async {
@@ -598,7 +596,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
 //      });
 //      _incrementCounterGlobal();
 
-    }
+    // }
 
 //    print('test insert new channel');
 //    for (int i = 0; i < 1; i++) {
@@ -621,18 +619,18 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   }
 
   void _incrementCounterGlobal() {
-    final DocumentReference postRef = Firestore.instance.collection('global').document('counter');
-    Firestore.instance.runTransaction((Transaction tx) async {
-      DocumentSnapshot postSnapshot = await tx.get(postRef);
-      if (postSnapshot.exists) {
-//        setState(() {
-//          _counter = postSnapshot.data['counter'] + 1;
-//        });
-        await tx.update(postRef, <String, dynamic>{'counter': postSnapshot.data()['counter'] + 1});
-      } else {
-        await tx.set(postRef, <String, dynamic>{'counter': 0});
-      }
-    });
+//     final DocumentReference postRef = Firestore.instance.collection('global').document('counter');
+//     Firestore.instance.runTransaction((Transaction tx) async {
+//       DocumentSnapshot postSnapshot = await tx.get(postRef);
+//       if (postSnapshot.exists) {
+// //        setState(() {
+// //          _counter = postSnapshot.data['counter'] + 1;
+// //        });
+//         await tx.update(postRef, <String, dynamic>{'counter': postSnapshot.data()['counter'] + 1});
+//       } else {
+//         await tx.set(postRef, <String, dynamic>{'counter': 0});
+//       }
+//     });
   }
 
   @override
@@ -931,7 +929,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       children: <Widget>[
         Padding(
           padding: EdgeInsets.all(8.0).copyWith(bottom: 4).copyWith(left: 14),
-          child: Text(statusText, style: Theme.of(context).textTheme.title.copyWith(color: Colors.white10)),
+          child: Text(statusText, style: Theme.of(context).textTheme.caption.copyWith(color: Colors.white10)),
         ),
 
 //          Text(
@@ -1288,13 +1286,13 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
   }
 
   void scanQRCode() async {
-    String barcode = await BarcodeScanner.scan();
+    ScanResult barcode = await BarcodeScanner.scan();
 
 //    var qrdata = jsonDecode(barcode);
 //    RedPandaLightClient.channelFromData(qrdata['sharedFromNick'], Utils.base58decode(qrdata['sharedSecret']),
 //        Utils.base58decode(qrdata['privateSigningKey']));
 
-    new Timer(Duration(seconds: 1), () => RedPandaLightClient.channelFromData("unnamed", barcode));
+    new Timer(Duration(seconds: 1), () => RedPandaLightClient.channelFromData("unnamed", barcode.rawContent));
   }
 
   void downloadUpdate() async {
@@ -1403,8 +1401,7 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
       return;
     }
 
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-        'messages$channelName', 'Messages: $channelName', 'Notification channel for new messages for $channelName',
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails('messages$channelName', 'Messages: $channelName',
         importance: Importance.defaultImportance, priority: Priority.defaultPriority, ticker: 'ticker');
     var iOSPlatformChannelSpecifics = IOSNotificationDetails();
     var platformChannelSpecifics =
@@ -1451,8 +1448,8 @@ class _MyHomePageState extends State<MyHomePage> implements WidgetsBindingObserv
     final defaults = <String, dynamic>{'version_critical': '0'};
     await remoteConfig.setDefaults(defaults);
 
-    await remoteConfig.fetch(expiration: const Duration(minutes: 1));
-    await remoteConfig.activateFetched();
+    // await remoteConfig.fetch(expiration: const Duration(minutes: 1));
+    // await remoteConfig.activateFetched();
     var remoteVersion = int.parse(remoteConfig.getString('version_critical'));
     print('version_critical: $remoteVersion');
 

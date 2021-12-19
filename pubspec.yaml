@@ -25,37 +25,36 @@ dependencies:
   cupertino_icons: ^1.0.0
   buffer: ^1.0.6
   shared_preferences: ^0.5.3+4
-  fluttertoast: ^7.1.6
-  hex: ^0.1.2
+  fluttertoast: ^8.0.8
+  hex: ^0.2.0
   #  base58check: ^1.0.1
   #  byte_array: ^0.1.6
   #  pointycastle: ^1.0.2
-  cryptography: ^0.1.2
-  google_sign_in: ^4.1.4
+  google_sign_in: ^5.2.1
   preferences: ^5.1.0
-  cloud_firestore: ^0.14.4
-  firebase_auth: ^0.18.4
-  firebase_messaging: ^7.0.3
-  firebase_remote_config: ^0.4.3
-  sentry: ^4.0.1
+  sentry: ^6.1.2
   sqlite3_flutter_libs:
   redpanda_light_client:
-    git:
-      url: https://github.com/redPanda-project/redpanda_light_client.git
-      ref: dev #using dev branch
-  #    path: ../redpanda_light_client
-  path_provider: ^1.6.5
+    #    git:
+    #      url: https://github.com/redPanda-project/redpanda_light_client.git
+    #      ref: dev #using dev branch
+    path: ../../redpanda_light_client
+  path_provider: ^2.0.0
 
-  workmanager: ^0.2.0
-  flutter_local_notifications: ^3.0.2
-  qr_flutter: ^3.1.0
-  barcode_scan: ^2.0.1
-  date_format: ^1.0.8
+  workmanager: ^0.4.1
+  flutter_local_notifications: ^9.1.4
+  qr_flutter: ^4.0.0
+  date_format: ^2.0.4
   #  cached_network_image: ^2.0.0
   flutter_downloader: ^1.4.1
   open_file: ^3.0.1
-
-  audioplayers: ^0.15.0
+  audioplayers: ^0.20.1
+  barcode_scan2: ^4.1.4
+  cloud_firestore: ^3.1.1
+  cryptography: ^2.0.5
+  firebase_auth: ^3.3.0
+  firebase_messaging: ^11.2.0
+  firebase_remote_config: ^0.11.0+2
 
 
 flutter_icons:
@@ -66,7 +65,7 @@ flutter_icons:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: "^0.7.3"
+  flutter_launcher_icons:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
